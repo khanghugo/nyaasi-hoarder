@@ -14,13 +14,24 @@ args = parser.parse_args()
 
 # since argparse returns in list, I have to make it to string
 seperator = ' '
-seriesName = seperator.join(args.seriesName).replace("'", '')
-print(seriesName)
 
-selectedQuality = args.selectedQuality
-print(selectedQuality)
+if args.seriesName: 
+	seriesName = seperator.join(args.seriesName)
 
-# righy now, only HorribleSubs is supported. 
+if args.selectedQuality:
+	selectedQuality = args.selectedQuality
+
+#use these comments if you want to run by executing the script only
+#seriesName = 'Fate Grand Order - Absolute Demonic Front Babylonia'
+#selectedQuality = '1080p'
+#arg.dl = True
+#arg.save = True
+
+# a head up
+print(seriesName +' in ' +selectedQuality)
+
+
+# righy now, only HorribleSubs is supported. in the future, the sub team will be an input
 url = 'https://nyaa.si/user/HorribleSubs'
 tag = 'a'
 masterUrl = 'https://nyaa.si'
@@ -30,7 +41,8 @@ torrentList = []
 magnetList = []
 episodeList = []
 count = 0
-repeatTime = 10
+repeatTime = 0
+phase = 0
 
 #this makes the url query regarding of page raising up by one
 def urlRaiser(number):
@@ -67,39 +79,43 @@ def findEpisodeData(htmlCode):
 			return episodeNumber
 			
 #this is where the script happens
-while repeatTime <= 10:
+while repeatTime <= 20:
 
 	#the input is count which starts with 0
 	episodeNumber = findEpisodeData(parsingNyaasi(urlRaiser(count)))
 
+	#count associates with the urlRaiser to check every pages. So as this number increases, more pages are checked
 	count = count + 1
 
-	if episodeNumber == '01' or episodeList[-1] == '01':
+	#for many series, 01 maybe the first episode, but some aren't so I have to incorporate a little part to check 00 episode
+	if episodeNumber == '01': # since the episode number is in string, if the episode happen to be 100.5, I may need to add some lines to make it work
 
 		#this script is to find, not to find something is not there.
 		print('Finding for episode 00 (mandatory for every series because it is not fed with the number of episodes but the latest one')
 		print('You can cancel it now instead! Or find it out by yourself because it will just take time!)')
+		phase = 1 # the fact that episode 01 is found, it will now start phase '1' where it will find episode 00
 
-		repeatTime = repeatTime + 1
+	if phase == 1:
+		repeatTime = repeatTime + 1 # the loop starts with a condition. this means if repeatTime is too high, the loop will stop so the dl and save can take part in. I cannot use the last condition to check this because not every episode after the '01' condition will forever be '01' but NoneType object instead
 
-		if episodeList[-1] != '00' and repeatTime > 10:
-			print('There is not episode 00')
-			print('Done!')
-			break
-
-		continue
-		#this is just the end point to the script
+	# pretty self-explanatory
 	if episodeNumber == '00':
+		print('Done')
+		break
+	# when finding episode 00, the script has limited pages to check on, and the repeatTime is the number of pages need checking after 01
+	if repeatTime > 20:
+		print('No episode 00 found!')
 		print('Done')
 		break
 
 #this is where the output is piped to
 if args.dl:
 	for link in magnetList:
-		webbrowser.open(link)
+		webbrowser.open(link) # yea this is the most convenient way I can think of to initiate the torrent. you still need a torrent client to make it work.
 
 if args.save:
-	f = open(f"{seriesName} in {selectedQuality} magnet and torret links.txt", 'w+')
+	f = open(f"{seriesName} in {selectedQuality} magnet and torret links.txt", 'w+') # w+ means makes a new file and write on it 
+	
 	for link in torrentList:
 		f.write('Episode ' + episodeList[torrentList.index(link)] +": "+ link + "\r\n")
 	for link2 in magnetList:
