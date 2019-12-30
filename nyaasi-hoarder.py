@@ -14,7 +14,7 @@ args = parser.parse_args()
 
 # since argparse returns in list, I have to make it to string
 seperator = ' '
-seriesName = seperator.join(args.seriesName)
+seriesName = seperator.join(args.seriesName).replace("'", '')
 print(seriesName)
 
 selectedQuality = args.selectedQuality
@@ -30,6 +30,7 @@ torrentList = []
 magnetList = []
 episodeList = []
 count = 0
+repeatTime = 10
 
 #this makes the url query regarding of page raising up by one
 def urlRaiser(number):
@@ -66,20 +67,27 @@ def findEpisodeData(htmlCode):
 			return episodeNumber
 			
 #this is where the script happens
-while True:
+while repeatTime <= 10:
 
 	#the input is count which starts with 0
 	episodeNumber = findEpisodeData(parsingNyaasi(urlRaiser(count)))
 
 	count = count + 1
 
-	if episodeNumber == '01':
+	if episodeNumber == '01' or episodeList[-1] == '01':
 
 		#this script is to find, not to find something is not there.
 		print('Finding for episode 00 (mandatory for every series because it is not fed with the number of episodes but the latest one')
-		print('You can cancel it now instead! Or find it out by yourself because it will just take time!')
-		continue
+		print('You can cancel it now instead! Or find it out by yourself because it will just take time!)')
 
+		repeatTime = repeatTime + 1
+
+		if episodeList[-1] != '00' and repeatTime > 10:
+			print('There is not episode 00')
+			print('Done!')
+			break
+
+		continue
 		#this is just the end point to the script
 	if episodeNumber == '00':
 		print('Done')
@@ -93,6 +101,6 @@ if args.dl:
 if args.save:
 	f = open(f"{seriesName} in {selectedQuality} magnet and torret links.txt", 'w+')
 	for link in torrentList:
-		f.write(episodeList[torrentList.index(link)] +": "+ link + "\r\n")
+		f.write('Episode ' + episodeList[torrentList.index(link)] +": "+ link + "\r\n")
 	for link2 in magnetList:
-		f.write(episodeList[magnetList.index(link2)] +": "+ link2 + "\r\n")
+		f.write('Episode ' + episodeList[magnetList.index(link2)] +": "+ link2 + "\r\n")
