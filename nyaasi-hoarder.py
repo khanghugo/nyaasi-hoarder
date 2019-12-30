@@ -4,11 +4,11 @@ import argparse
 import webbrowser
 
 # argument parsers to run as command line
-# example of usage: python nyaasi-hoarder.py Fate Grand Order - Absolute Demonic Front Babylonia -q 1080 -dl
+# example of usage: python nyaasi-hoarder.py Fate Grand Order - Absolute Demonic Front Babylonia -q 1080 -dl magnet
 parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [-dl] [-save]')
 parser.add_argument(help='Put the actual series name here', action="store", dest='seriesName', nargs='*')
 parser.add_argument('-q', help='1080p/720p/480p/360p', action="store", dest='selectedQuality', default='1080p', nargs='?')
-parser.add_argument('-dl', default='', help='Torrent all files through magnet link', action="store_true")
+parser.add_argument('-dl', default='', help='Torrent all files through magnet link', action="store")
 parser.add_argument('-save', default='', help='Save links in a txt file', action="store_true")
 args = parser.parse_args()
 
@@ -77,7 +77,25 @@ def findEpisodeData(htmlCode):
 
 			#return this value so the loop can check logics
 			return episodeNumber
-			
+
+#this is where the output is piped to
+
+def downloadThroughTorrent(linkList):
+	for link in linkList:
+		webbrowser.open(link)
+
+def saveTorrentLink(linkList, seriesList, linkType):
+	f = open(f"{seriesName} in {selectedQuality} magnet and torret links.txt", 'a') # a means (makes a new file and) append on it 
+
+	if linkType == 'magnet':
+		f.write('Magnet links \r\n')
+	elif linkType == 'torrent':
+		f.write('Torrent links \r\n')
+
+	for link in linkList:
+		f.write('Episode ' + seriesList[linkList.index(link)] +": "+ link + "\r\n")
+		
+
 #this is where the script happens
 while repeatTime <= 20:
 
@@ -98,6 +116,9 @@ while repeatTime <= 20:
 	if phase == 1:
 		repeatTime = repeatTime + 1 # the loop starts with a condition. this means if repeatTime is too high, the loop will stop so the dl and save can take part in. I cannot use the last condition to check this because not every episode after the '01' condition will forever be '01' but NoneType object instead
 
+	if episodeNumber == '10':
+		break
+
 	# pretty self-explanatory
 	if episodeNumber == '00':
 		print('Done')
@@ -108,15 +129,12 @@ while repeatTime <= 20:
 		print('Done')
 		break
 
-#this is where the output is piped to
-if args.dl:
-	for link in magnetList:
-		webbrowser.open(link) # yea this is the most convenient way I can think of to initiate the torrent. you still need a torrent client to make it work.
+if args.dl == 'magnet':
+	downloadThroughTorrent(magnetList)
+
+elif args.dl == 'torrent':
+	downloadThroughTorrent(torrentList)
 
 if args.save:
-	f = open(f"{seriesName} in {selectedQuality} magnet and torret links.txt", 'w+') # w+ means makes a new file and write on it 
-	
-	for link in torrentList:
-		f.write('Episode ' + episodeList[torrentList.index(link)] +": "+ link + "\r\n")
-	for link2 in magnetList:
-		f.write('Episode ' + episodeList[magnetList.index(link2)] +": "+ link2 + "\r\n")
+	saveTorrentLink(magnetList, episodeList, 'magnet')
+	saveTorrentLink(torrentList, episodeList, 'torrent')
