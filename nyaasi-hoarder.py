@@ -8,7 +8,8 @@ class nyaasi_hoarder:
 		self.subTeam = subTeam
 		self.seriesName = seriesName
 		self.selectedQuality = selectedQuality
-		self.url = 'https://nyaa.si/user/HorribleSubs'
+		self.subTeam = subTeam
+		self.url = f'https://nyaa.si/user/{self.subTeam}'
 		self.masterUrl = 'https://nyaa.si'
 		self.tag = 'a'
 		self.episodeList = []
@@ -16,7 +17,7 @@ class nyaasi_hoarder:
 		self.torrentList = []
 
 	def urlRaiser(self, number):
-		return f'https://nyaa.si/user/HorribleSubs?p={number+1}'
+		return f'https://nyaa.si/user/{self.subTeam}?p={number+1}'
 
 	def parsingNyaasi(self, url):
 		session = requests.Session()
