@@ -116,9 +116,6 @@ while repeatTime <= 20:
 	if phase == 1:
 		repeatTime = repeatTime + 1 # the loop starts with a condition. this means if repeatTime is too high, the loop will stop so the dl and save can take part in. I cannot use the last condition to check this because not every episode after the '01' condition will forever be '01' but NoneType object instead
 
-	if episodeNumber == '10':
-		break
-
 	# pretty self-explanatory
 	if episodeNumber == '00':
 		print('Done')
