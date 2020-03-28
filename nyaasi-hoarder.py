@@ -3,10 +3,15 @@ from bs4 import BeautifulSoup, SoupStrainer
 import argparse
 import webbrowser
 import re
+import time
+
+# python nyaasi-hoarder.py "Re Zero kara Hajimeru Isekai Seikatsu - Director's Cut" -fs HorribleSubs -q 1080p -save
+# python nyaasi-hoarder.py Dorohedoro -q 1080p -dl magnet
+
 
 class nyaasi_hoarder:
 	def __init__(self, subTeam, seriesName, selectedQuality):
-		self.subTeam = "Judas"
+		self.subTeam = subTeam
 		self.seriesName = seriesName
 		self.selectedQuality = selectedQuality
 		#self.url = 'https://nyaa.si/user/HorribleSubs'
@@ -16,10 +21,10 @@ class nyaasi_hoarder:
 		self.magnetList = []
 		self.torrentList = []
 		self.rawData = []
-		self.episodeListBug = ['']
+		self.episodeListBug = []
 
 	def urlRaiser(self, number):
-		return f'https://nyaa.si/user/Judas?p={number+1}'
+		return self.masterUrl+"/user/"+self.subTeam+"?p="+str(number+1)
 
 	def parsingNyaasi(self, url):
 		session = requests.Session()
@@ -31,27 +36,42 @@ class nyaasi_hoarder:
 		#return splitting
 
 	def findEpisodeData(self, htmlCode):
+
 		for htmlAttribute in htmlCode.find_all('a'):
-			self.rawData.append(htmlAttribute)
-		for episodeIndexRaw in self.rawData:
-			episodeIndex = str(episodeIndexRaw)
+			self.rawData.append(str(htmlAttribute))
+
+		for episodeIndex in self.rawData:
+			#episodeIndex = str(episodeIndexRaw)
 			if self.selectedQuality in episodeIndex and self.seriesName in episodeIndex and self.subTeam in episodeIndex and "magnet" not in episodeIndex:
-				episodeIndexNumber = self.rawData.index(episodeIndexRaw)
+
+				#print(episodeIndex)
+
+				episodeIndexNumber = self.rawData.index(episodeIndex)
+
+				#print(episodeIndexNumber)
+				
 				episodeNumberRaw = re.findall('"([^"]*)"', str(self.rawData[episodeIndexNumber]))[1]
 				torrentLink = re.findall('"([^"]*)"', str(self.rawData[episodeIndexNumber+1]))[0]
 				magnetLink = re.findall('"([^"]*)"', str(self.rawData[episodeIndexNumber+2]))[0]
-				print(episodeNumberRaw + ' ADDED!')
+
 
 				#this makes into a list for multi-purpose uses
-				self.torrentList.append(self.masterUrl + torrentLink)
-				self.magnetList.append(magnetLink)
-				self.episodeList.append(episodeNumberRaw)
+				if episodeNumberRaw not in self.episodeList:
 
-				episodeNumber = episodeNumberRaw.replace("[Judas]", "").replace(self.seriesName, "")[3:8].replace("[", "").replace(" ","")
+					print(episodeNumberRaw + ' ADDED!')
+					self.torrentList.append(self.masterUrl + torrentLink)
+					self.magnetList.append(magnetLink)
+					self.episodeList.append(episodeNumberRaw)
 
-				#print(episodeNumber)
+					episodeNumber = episodeNumberRaw.replace(f"[{self.subTeam}]", "").replace(self.seriesName, "")[3:8].replace("[", "").replace(" ","")
 
-				self.episodeListBug.append(episodeNumber)
+					self.episodeListBug.append(episodeNumber)
+				
+					#print(episodeNumber)
+				else:
+					pass
+
+
 
 	def downloadThroughTorrent(self, linkList):
 		for link in linkList:
@@ -68,11 +88,11 @@ class nyaasi_hoarder:
 		for link in linkList:
 			f.write(seriesList[linkList.index(link)] +": "+ link + "\r\n")
 
-
 def main():
 	parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [-dl] [-save]')
 	parser.add_argument(help='Put the actual series name here', action="store", dest='seriesName', nargs='*')
-	parser.add_argument('-q', help='1080p/720p/480p/360p', action="store", dest='selectedQuality', default='1080p', nargs='?')
+	parser.add_argument('-fs', help='Name of the fansub team (Judas is default)', action="store", dest='subTeam', default='Judas', nargs='?')
+	parser.add_argument('-q', help='1080p | 720p | 480p | 360p (1080p is default)', action="store", dest='selectedQuality', default='1080p', nargs='?')
 	parser.add_argument('-dl', default='', help='Torrent all files through magnet link', action="store")
 	parser.add_argument('-save', default='', help='Save links in a txt file', action="store_true")
 	args = parser.parse_args()
@@ -86,42 +106,60 @@ def main():
 	#	selectedQuality = args.selectedQuality
 
 	# object
-	nyaasi = nyaasi_hoarder('Judas', seperator.join(args.seriesName), args.selectedQuality)
+	nyaasi = nyaasi_hoarder(str(args.subTeam), seperator.join(args.seriesName), args.selectedQuality)
 	#print(seperator.join(args.seriesName))
 	#print(args.selectedQuality)
 	#print(nyaasi.findEpisodeData(nyaasi.parsingNyaasi(nyaasi.urlRaiser(0))))
 
 	#this is where the script happens
 	count = 0
-	repeatTime = 0
 	phase = 0
-	
+
 	# debug
 	#phase1 = (nyaasi.parsingNyaasi(nyaasi.urlRaiser(count)))
 	#phase2 = nyaasi.findEpisodeData(phase1)
-	while repeatTime <= 20:
+	#print(phase2)
+	#print(nyaasi.rawData)
+
+
+	while True: # <=
 		try: 
-			phase1 = (nyaasi.parsingNyaasi(nyaasi.urlRaiser(count)))
-			phase2 = nyaasi.findEpisodeData(phase1)
+
+			episodeNumber = nyaasi.findEpisodeData(nyaasi.parsingNyaasi(nyaasi.urlRaiser(count)))
 
 			count += 1
+			#print(count)
+			#print(phase2)
+
+			if nyaasi.episodeListBug == []:
+				continue
+			else:
+				if nyaasi.episodeListBug[-1] == '01':
+					if phase == 0:
+						print("\r\nFINDING EPISODE 00!", end ="", flush=True)
+					phase += 1
+					print(".", end="", flush=True)
+
+					if phase > 10:
+						print("\r\nTHERE IS NO EPISODE 00!")
+						break
+
+				if nyaasi.episodeListBug[-1] == '00':
+					break
+
+
 		except KeyboardInterrupt:
-			phase = 1
 			break
 
-	finalMagnetList = list(set(nyaasi.magnetList))
-	finalTorrentList = list(set(nyaasi.torrentList))
-	finalEpisodeList = list(set(nyaasi.episodeList))
-
 	if args.dl == 'magnet':
-		nyaasi.downloadThroughTorrent(finalMagnetList)
+		nyaasi.downloadThroughTorrent(nyaasi.magnetList)
 	
 	elif args.dl == 'torrent':
-		nyaasi.downloadThroughTorrent(finalTorrentList)
+		nyaasi.downloadThroughTorrent(nyaasi.torrentList)
 	
 	if args.save:
-		nyaasi.saveTorrentLink(finalMagnetList, finalEpisodeList, 'magnet')
-		nyaasi.saveTorrentLink(finalTorrentList, finalEpisodeList, 'torrent')
+		nyaasi.saveTorrentLink(nyaasi.magnetList, nyaasi.episodeList, 'magnet')
+		nyaasi.saveTorrentLink(nyaasi.torrentList, nyaasi.episodeList, 'torrent')
 
 
 if __name__ == '__main__':
