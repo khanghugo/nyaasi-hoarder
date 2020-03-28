@@ -2,16 +2,12 @@
 
 This script will torrent the selected anime. It can also save torrent links for use later
 
-It can run with command-line option `python nyaasi-hoarder.py anime name -q 1080p -dl torrent`. If you want to execute the script only, it is really easy since I make most of the scripts under definitions.
+It can run with command-line option `python nyaasi-hoarder.py "anime name" -fs "HorribleSubs" -q 1080p -dl torrent`.
 
-you can use `-save` instead of `-dl` to save it into a file.
+You must include the quotation marks when the name of either sub team or anime has `-` in
 
-when you start the script, it will look for the animes on nyaasi. 
+`dl` method has either `torrent` or `magnet` for you to choose. For the script to execute the download, it will run with the browser, for now.
 
-right now I set to Judas, if you wish for something different, you can tinker the script, really easy
+You can use `-save` instead of `-dl` to save it into a file.
 
-it will run forever until you tell it to stop
-
-my python is not working consistently because I had another output for `print` just because I add a harmless `return`
-
-when you stop executing the script, your downloading will start.
+Different fan sub team has different anime names, either in English or Japanese. So know your stuffs~
