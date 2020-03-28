@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup, SoupStrainer
 import argparse
 import webbrowser
 import re
-import time
 
 # python nyaasi-hoarder.py "Re Zero kara Hajimeru Isekai Seikatsu - Director's Cut" -fs HorribleSubs -q 1080p -save
 # python nyaasi-hoarder.py Dorohedoro -q 1080p -dl magnet
@@ -14,7 +13,6 @@ class nyaasi_hoarder:
 		self.subTeam = subTeam
 		self.seriesName = seriesName
 		self.selectedQuality = selectedQuality
-		#self.url = 'https://nyaa.si/user/HorribleSubs'
 		self.masterUrl = 'https://nyaa.si'
 		self.tag = 'a'
 		self.episodeList = []
@@ -32,8 +30,7 @@ class nyaasi_hoarder:
 		strainer = SoupStrainer(self.tag)
 		soup = BeautifulSoup(response.text, "lxml", parse_only=strainer)
 		return soup
-		#splitting = str(soup).split('<a href=')	
-		#return splitting
+
 
 	def findEpisodeData(self, htmlCode):
 
@@ -41,21 +38,15 @@ class nyaasi_hoarder:
 			self.rawData.append(str(htmlAttribute))
 
 		for episodeIndex in self.rawData:
-			#episodeIndex = str(episodeIndexRaw)
+
 			if self.selectedQuality in episodeIndex and self.seriesName in episodeIndex and self.subTeam in episodeIndex and "magnet" not in episodeIndex:
 
-				#print(episodeIndex)
-
 				episodeIndexNumber = self.rawData.index(episodeIndex)
-
-				#print(episodeIndexNumber)
 				
 				episodeNumberRaw = re.findall('"([^"]*)"', str(self.rawData[episodeIndexNumber]))[1]
 				torrentLink = re.findall('"([^"]*)"', str(self.rawData[episodeIndexNumber+1]))[0]
 				magnetLink = re.findall('"([^"]*)"', str(self.rawData[episodeIndexNumber+2]))[0]
 
-
-				#this makes into a list for multi-purpose uses
 				if episodeNumberRaw not in self.episodeList:
 
 					print(episodeNumberRaw + ' ADDED!')
@@ -67,7 +58,6 @@ class nyaasi_hoarder:
 
 					self.episodeListBug.append(episodeNumber)
 				
-					#print(episodeNumber)
 				else:
 					pass
 
@@ -98,29 +88,15 @@ def main():
 	args = parser.parse_args()
 
 
-	# a little actions to convert parameter as a list to a string for use
 	seperator = ' '
-	#if args.seriesName: 
-	#	seriesName = seperator.join(args.seriesName)
-	#if args.selectedQuality:
-	#	selectedQuality = args.selectedQuality
 
 	# object
 	nyaasi = nyaasi_hoarder(str(args.subTeam), seperator.join(args.seriesName), args.selectedQuality)
-	#print(seperator.join(args.seriesName))
-	#print(args.selectedQuality)
-	#print(nyaasi.findEpisodeData(nyaasi.parsingNyaasi(nyaasi.urlRaiser(0))))
+
 
 	#this is where the script happens
 	count = 0
 	phase = 0
-
-	# debug
-	#phase1 = (nyaasi.parsingNyaasi(nyaasi.urlRaiser(count)))
-	#phase2 = nyaasi.findEpisodeData(phase1)
-	#print(phase2)
-	#print(nyaasi.rawData)
-
 
 	while True: # <=
 		try: 
@@ -128,8 +104,6 @@ def main():
 			episodeNumber = nyaasi.findEpisodeData(nyaasi.parsingNyaasi(nyaasi.urlRaiser(count)))
 
 			count += 1
-			#print(count)
-			#print(phase2)
 
 			if nyaasi.episodeListBug == []:
 				continue
@@ -141,7 +115,7 @@ def main():
 					print(".", end="", flush=True)
 
 					if phase > 10:
-						print("\r\nTHERE IS NO EPISODE 00!")
+						print("\r\n\r\nTHERE IS NO EPISODE 00!")
 						break
 
 				if nyaasi.episodeListBug[-1] == '00':
