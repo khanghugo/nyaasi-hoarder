@@ -10,6 +10,6 @@ You must include the quotation marks when the name of either sub team or anime h
 
 `dl` method has either `torrent` or `magnet` for you to choose. For the script to execute the download, it will run with the browser, for now.
 
-You can use `-save` instead of `-dl` to save it into a file.
+You can use `-save` instead of `-dl` to save the links into a file.
 
 Different fan sub team has different anime names, either in English or Japanese. So know your stuffs~
