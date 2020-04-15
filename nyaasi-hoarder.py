@@ -5,7 +5,7 @@ import webbrowser
 import re
 
 # python nyaasi-hoarder.py "Re Zero kara Hajimeru Isekai Seikatsu - Director's Cut" -fs HorribleSubs -q 1080p -save
-# python nyaasi-hoarder.py Dorohedoro -q 1080p -dl magnet
+# python nyaasi-hoarder.py Dorohedoro -ep 09 -q 1080p -dl magnet
 
 
 class nyaasi_hoarder:
@@ -49,7 +49,7 @@ class nyaasi_hoarder:
 
 				if episodeNumberRaw not in self.episodeList:
 
-					print(episodeNumberRaw + ' ADDED!')
+					print(episodeNumberRaw + ' FOUND!')
 					self.torrentList.append(self.masterUrl + torrentLink)
 					self.magnetList.append(magnetLink)
 					self.episodeList.append(episodeNumberRaw)
@@ -67,7 +67,7 @@ class nyaasi_hoarder:
 		for link in linkList:
 			webbrowser.open(link)
 
-	def saveTorrentLink(self, linkList, seriesList, linkType):
+	def saveTorrentLink(self, linkList, seriesList, linkType, mode):
 		f = open(f"{self.seriesName} in {self.selectedQuality} magnet and torret links.txt", 'a') # a means (makes a new file and) append on it 
 
 		if linkType == 'magnet':
@@ -75,12 +75,18 @@ class nyaasi_hoarder:
 		elif linkType == 'torrent':
 			f.write('Torrent links \r\n')
 
-		for link in linkList:
-			f.write(seriesList[linkList.index(link)] +": "+ link + "\r\n")
+		
+		if mode == 1: # mode 1 is downloading one single epsiode. I try to use the type() method instead but somehow I am too spaghetti for that.
+			f.write(seriesList +": "+ linkList + "\r\n")
+
+		if mode == 0: # mode 0 is download in list.
+			for link in linkList:
+				f.write(seriesList[linkList.index(link)] +": "+ link + "\r\n")
 
 def main():
 	parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [-dl] [-save]')
 	parser.add_argument(help='Put the actual series name here', action="store", dest='seriesName', nargs='*')
+	parser.add_argument('-ep', help='Episode Number', action="store", dest='dlEpisode', default='all', nargs='?')
 	parser.add_argument('-fs', help='Name of the fansub team (Judas is default)', action="store", dest='subTeam', default='Judas', nargs='?')
 	parser.add_argument('-q', help='1080p | 720p | 480p | 360p (1080p is default)', action="store", dest='selectedQuality', default='1080p', nargs='?')
 	parser.add_argument('-dl', default='', help='Torrent all files through magnet link', action="store")
@@ -107,33 +113,53 @@ def main():
 
 			if nyaasi.episodeListBug == []:
 				continue
-			else:
-				if nyaasi.episodeListBug[-1] == '01':
-					if phase == 0:
-						print("\r\nFINDING EPISODE 00!", end ="", flush=True)
-					phase += 1
-					print(".", end="", flush=True)
 
-					if phase > 10:
-						print("\r\n\r\nTHERE IS NO EPISODE 00!")
+			else:
+				if args.dlEpisode == 'all':
+					if nyaasi.episodeListBug[-1] == '01':
+						if phase == 0:
+							print("\r\nFINDING EPISODE 00!", end ="", flush=True)
+						phase += 1
+						print(".", end="", flush=True)
+
+						if phase > 10:
+							print("\r\n\r\nTHERE IS NO EPISODE 00!")
+							break
+
+					elif nyaasi.episodeListBug[-1] == '00':
 						break
 
-				if nyaasi.episodeListBug[-1] == '00':
-					break
+				if args.dlEpisode != 'all':
+					if nyaasi.episodeListBug[-1] == args.dlEpisode:
+						print("\r\n\r\nDONE!")
+						break
+
 
 
 		except KeyboardInterrupt:
 			break
 
-	if args.dl == 'magnet':
-		nyaasi.downloadThroughTorrent(nyaasi.magnetList)
+	if args.dlEpisode == 'all':
+		if args.dl == 'magnet':
+			nyaasi.downloadThroughTorrent(nyaasi.magnetList)
 	
-	elif args.dl == 'torrent':
-		nyaasi.downloadThroughTorrent(nyaasi.torrentList)
+		elif args.dl == 'torrent':
+			nyaasi.downloadThroughTorrent(nyaasi.torrentList)
 	
-	if args.save:
-		nyaasi.saveTorrentLink(nyaasi.magnetList, nyaasi.episodeList, 'magnet')
-		nyaasi.saveTorrentLink(nyaasi.torrentList, nyaasi.episodeList, 'torrent')
+		if args.save:
+			nyaasi.saveTorrentLink(nyaasi.magnetList, nyaasi.episodeList, 'magnet', 0)
+			nyaasi.saveTorrentLink(nyaasi.torrentList, nyaasi.episodeList, 'torrent', 0)
+
+	if args.dlEpisode != 'all':
+		if args.dl == 'magnet':
+			nyaasi.downloadThroughTorrent(nyaasi.magnetList[-1])
+	
+		elif args.dl == 'torrent':
+			nyaasi.downloadThroughTorrent(nyaasi.torrentList[-1])
+	
+		if args.save:
+			nyaasi.saveTorrentLink(nyaasi.magnetList[-1], nyaasi.episodeList[-1], 'magnet', 1)
+			nyaasi.saveTorrentLink(nyaasi.torrentList[-1], nyaasi.episodeList[-1], 'torrent', 1)
 
 
 if __name__ == '__main__':
