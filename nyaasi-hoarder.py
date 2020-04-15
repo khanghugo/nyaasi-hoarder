@@ -63,9 +63,13 @@ class nyaasi_hoarder:
 
 
 
-	def downloadThroughTorrent(self, linkList):
-		for link in linkList:
-			webbrowser.open(link)
+	def downloadThroughTorrent(self, linkList, mode):
+		if mode == 0:
+			for link in linkList:
+				webbrowser.open(link)
+				
+		if mode == 1:
+			webbrowser.open(linkList)
 
 	def saveTorrentLink(self, linkList, seriesList, linkType, mode):
 		f = open(f"{self.seriesName} in {self.selectedQuality} magnet and torret links.txt", 'a') # a means (makes a new file and) append on it 
@@ -141,10 +145,10 @@ def main():
 
 	if args.dlEpisode == 'all':
 		if args.dl == 'magnet':
-			nyaasi.downloadThroughTorrent(nyaasi.magnetList)
+			nyaasi.downloadThroughTorrent(nyaasi.magnetList, 0)
 	
 		elif args.dl == 'torrent':
-			nyaasi.downloadThroughTorrent(nyaasi.torrentList)
+			nyaasi.downloadThroughTorrent(nyaasi.torrentList, 0)
 	
 		if args.save:
 			nyaasi.saveTorrentLink(nyaasi.magnetList, nyaasi.episodeList, 'magnet', 0)
@@ -152,10 +156,10 @@ def main():
 
 	if args.dlEpisode != 'all':
 		if args.dl == 'magnet':
-			nyaasi.downloadThroughTorrent(nyaasi.magnetList[-1])
+			nyaasi.downloadThroughTorrent(nyaasi.magnetList[-1], 1)
 	
 		elif args.dl == 'torrent':
-			nyaasi.downloadThroughTorrent(nyaasi.torrentList[-1])
+			nyaasi.downloadThroughTorrent(nyaasi.torrentList[-1], 1)
 	
 		if args.save:
 			nyaasi.saveTorrentLink(nyaasi.magnetList[-1], nyaasi.episodeList[-1], 'magnet', 1)
