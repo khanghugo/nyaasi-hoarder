@@ -88,9 +88,9 @@ class nyaasi_hoarder:
 				f.write(seriesList[linkList.index(link)] +": "+ link + "\r\n")
 
 def main():
-	parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [-dl] [-save]')
-	parser.add_argument(help='Put the actual series name here', action="store", dest='seriesName', nargs='*')
-	parser.add_argument('-ep', help='Episode Number', action="store", dest='dlEpisode', default='all', nargs='?')
+	parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [episode] [fan sub] [quality] [-dl magnet|torrent] or [-save]')
+	parser.add_argument(help='Put the actual series name here. If there is "-" sign in the name, use quotation mark ("") for the name.', action="store", dest='seriesName', nargs='*')
+	parser.add_argument('-ep', help='Episode number. Add 0 for episodes below 10. Ex: 09, 01, 00', action="store", dest='dlEpisode', default='all', nargs='?')
 	parser.add_argument('-fs', help='Name of the fansub team (Judas is default)', action="store", dest='subTeam', default='Judas', nargs='?')
 	parser.add_argument('-q', help='1080p | 720p | 480p | 360p (1080p is default)', action="store", dest='selectedQuality', default='1080p', nargs='?')
 	parser.add_argument('-dl', default='', help='Torrent all files through magnet link', action="store")
