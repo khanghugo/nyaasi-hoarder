@@ -12,4 +12,6 @@ You must include the quotation marks when the name of either sub team or anime h
 
 You can use `-save` instead of `-dl` to save the links into a file.
 
+You can stop the script at any time and the progress will be whatever that point is.
+
 Different fan sub team has different anime names, either in English or Japanese. So know your stuffs~
