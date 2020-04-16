@@ -39,7 +39,7 @@ class nyaasi_hoarder:
 
 		for episodeIndex in self.rawData:
 
-			if self.selectedQuality in episodeIndex and self.seriesName in episodeIndex and self.subTeam in episodeIndex and "magnet" not in episodeIndex:
+			if self.selectedQuality in episodeIndex and self.seriesName in episodeIndex and self.subTeam in episodeIndex and "magnet:?" not in episodeIndex:
 
 				episodeIndexNumber = self.rawData.index(episodeIndex)
 				
