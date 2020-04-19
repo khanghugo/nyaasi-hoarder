@@ -1,1 +1,1 @@
-from .nyaasi_hoarder import nyaasi_hoarder
+from nyaasi_hoarder import nyaasi_hoarder
