@@ -11,18 +11,35 @@ import re
 class nyaasi_hoarder:
 	def __init__(self, subTeam, seriesName, selectedQuality):
 		self.subTeam = subTeam
+
 		self.seriesName = seriesName
 		self.selectedQuality = selectedQuality
+
 		self.masterUrl = 'https://nyaa.si'
 		self.tag = 'a'
+
 		self.episodeList = []
 		self.magnetList = []
 		self.torrentList = []
 		self.rawData = []
 		self.episodeListBug = []
 
+		if self.subTeam == 'EMBER':
+			self.subTeamUrl = "Ember_Encodes"
+
+		elif self.subTeam == 'HR':
+			self.subTeamUrl = "HR-Minifreeza"
+
+		elif self.subTeam == 'YakuboEncodes':
+			self.subTeamUrl = "yakubo"
+
+		else:
+			self.subTeamUrl = self.subTeam
+
+
+
 	def urlRaiser(self, number):
-		return self.masterUrl+"/user/"+self.subTeam+"?p="+str(number+1)
+		return self.masterUrl+"/user/"+self.subTeamUrl+"?p="+str(number+1)
 
 	def parsingNyaasi(self, url):
 		session = requests.Session()
