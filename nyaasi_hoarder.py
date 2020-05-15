@@ -24,6 +24,7 @@ class nyaasi_hoarder:
 		self.rawData = []
 		self.episodeListBug = []
 
+		# spaghetti can be fixed with dictionary and some variable changes in the code
 		if self.subTeam == 'EMBER':
 			self.subTeamUrl = "Ember_Encodes"
 
@@ -89,7 +90,7 @@ class nyaasi_hoarder:
 			webbrowser.open(linkList)
 
 	def saveTorrentLink(self, linkList, seriesList, linkType, mode):
-		f = open(f"{self.seriesName} in {self.selectedQuality} magnet and torret links.txt", 'a') # a means (makes a new file and) append on it 
+		f = open(f"{self.seriesName} in {self.selectedQuality} magnet and torrent links.txt", 'a') # a means (makes a new file and) append on it 
 
 		if linkType == 'magnet':
 			f.write('Magnet links \r\n')
@@ -160,28 +161,21 @@ def main():
 		except KeyboardInterrupt:
 			break
 
-	if args.dlEpisode == 'all':
-		if args.dl == 'magnet':
-			nyaasi.downloadThroughTorrent(nyaasi.magnetList, 0)
-	
-		elif args.dl == 'torrent':
-			nyaasi.downloadThroughTorrent(nyaasi.torrentList, 0)
-	
-		if args.save:
-			nyaasi.saveTorrentLink(nyaasi.magnetList, nyaasi.episodeList, 'magnet', 0)
-			nyaasi.saveTorrentLink(nyaasi.torrentList, nyaasi.episodeList, 'torrent', 0)
+	if args.dlEpisode == "all":
+		mode = 0
 
-	if args.dlEpisode != 'all':
-		if args.dl == 'magnet':
-			nyaasi.downloadThroughTorrent(nyaasi.magnetList[-1], 1)
-	
-		elif args.dl == 'torrent':
-			nyaasi.downloadThroughTorrent(nyaasi.torrentList[-1], 1)
-	
-		if args.save:
-			nyaasi.saveTorrentLink(nyaasi.magnetList[-1], nyaasi.episodeList[-1], 'magnet', 1)
-			nyaasi.saveTorrentLink(nyaasi.torrentList[-1], nyaasi.episodeList[-1], 'torrent', 1)
+	else:
+		mode = 1
 
+	if args.dl == 'magnet':
+		nyaasi.downloadThroughTorrent(nyaasi.magnetList, mode)
+
+	elif args.dl == 'torrent':
+		nyaasi.downloadThroughTorrent(nyaasi.torrentList, mode)
+
+	if args.save:
+		nyaasi.saveTorrentLink(nyaasi.magnetList, nyaasi.episodeList, 'magnet', mode)
+		nyaasi.saveTorrentLink(nyaasi.torrentList, nyaasi.episodeList, 'torrent', mode)
 
 if __name__ == '__main__':
 	main()
