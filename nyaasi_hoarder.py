@@ -45,6 +45,14 @@ class nyaasi_hoarder:
 	def urlRaiser(self, number):
 		return self.masterUrl+"/user/"+self.subTeamUrl+"?p="+str(number+1)
 
+	def isNumber(self, char): # I find myself using this a lot so I have to make a function for its own
+		try:
+			int(char)
+			return True
+		except:
+			return False
+
+
 		# getting the html. I just look up online for this method.
 	def parsingNyaasi(self, url):
 		session = requests.Session()
@@ -55,14 +63,6 @@ class nyaasi_hoarder:
 
 		# some titles have adopted new formats like "S01E02" and is totally different from what they used to be. So this converts it to understandable info
 	def convertEpisodeFormatFromFullToNumber(self, episodeFullTitle):
-
-		def isNumber(char):
-			try:
-				int(char)
-				return True
-
-			except:
-				return False
 
 		episodeFullTitleCharList = []
 		seasonKey = 'S'
@@ -76,7 +76,7 @@ class nyaasi_hoarder:
 				# If the next one is the number then good. If the next one is "E" then good. And so on.
 				# Right now it is limited to 99 episodes and 99 seasons. I will try to find a way to make it through.
 
-				if (index >= 5) and (isNumber(episodeFullTitleCharList[index]) == True) and (isNumber(episodeFullTitleCharList[index - 1]) == True) and (episodeFullTitleCharList[index - 2] == episodeKey) and (isNumber(episodeFullTitleCharList[index - 3]) == True) and (isNumber(episodeFullTitleCharList[index - 4]) == True) and (episodeFullTitleCharList[index - 5] == seasonKey):
+				if (index >= 5) and (self.isNumber(episodeFullTitleCharList[index]) == True) and (self.isNumber(episodeFullTitleCharList[index - 1]) == True) and (episodeFullTitleCharList[index - 2] == episodeKey) and (self.isNumber(episodeFullTitleCharList[index - 3]) == True) and (self.isNumber(episodeFullTitleCharList[index - 4]) == True) and (episodeFullTitleCharList[index - 5] == seasonKey):
 					return (str(episodeFullTitleCharList[index - 4 ]) + str(episodeFullTitleCharList[index - 3])), (str(episodeFullTitleCharList[index - 1 ]) + str(episodeFullTitleCharList[index]))
 
 			except Exception as e:
@@ -105,11 +105,6 @@ class nyaasi_hoarder:
 				# throughout the html, there are many times when the title repeats, it just makes sure that doesn't happen.
 				if episodeFullTitle not in self.episodeList:
 
-					print(episodeFullTitle + ' FOUND!')
-					self.torrentList.append(self.masterUrl + torrentLink)
-					self.magnetList.append(magnetLink)
-					self.episodeList.append(episodeFullTitle)
-
 					# this method will decide what is the episode number cuz it's important
 					# because right now there are two ways that people express the episode numbers, I have to use try and except
 					# upcoming, I have to work around to read the season and not including it to the episodeList
@@ -120,26 +115,23 @@ class nyaasi_hoarder:
 						int(seasonNumber)
 						int(episodeNumber)
 
-						#debug
-						#episodeNumber += ' AAAAAASAAA'
-
 					except:
 						episodeNumber = episodeFullTitle.replace(f"[{self.subTeam}]", "").replace(self.seriesName, "")[3:8].replace("[", "").replace(" ","")
 
-					#print('THE EPISODE NUMBER IS ' + episodeNumber)
+					if self.isNumber(episodeNumber) == True:
+						print(episodeFullTitle + ' FOUND!')
 
-					self.episodeListJustNumber.append(episodeNumber)
-					#print(self.episodeListJustNumber)
+						self.episodeListJustNumber.append(episodeNumber)
+						self.torrentList.append(self.masterUrl + torrentLink)
+						self.magnetList.append(magnetLink)
+						self.episodeList.append(episodeFullTitle)
 
-					# even though a lot of things are processed here. The main() loop down there will just evaluate the episode number to move on so I am going to return this back to it.
-					return episodeNumber
+						return episodeNumber
+					else:
+						pass
 
-				
 				else:
 					pass
-
-
-
 
 	def downloadTorrent(self, linkList, selectedEpisode):
 		if selectedEpisode == 'all':
@@ -165,13 +157,6 @@ class nyaasi_hoarder:
 			for index, link in enumerate(linkList):
 				f.write(seriesList[index] +": "+ link + "\r\n")
 
-		#print(linkList)
-
-				#f.write(seriesList[linkList.index(link)] +": "+ link + "\r\n")
-
-	#print(self.convertEpisodeFormatFromFullToNumber('Rezero S01E14'))
-
-
 def main():
 	parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [episode] [fan sub] [quality] [-dl magnet|torrent] or [-save]')
 	parser.add_argument(help='Put the actual series name here. If there is "-" sign in the name, use quotation mark ("") for the name.', action="store", dest='seriesName', nargs='*')
@@ -188,14 +173,19 @@ def main():
 	# object
 	nyaasi = nyaasi_hoarder(str(args.subTeam), seperator.join(args.seriesName), args.selectedQuality)
 
+	# check/edit input
+	if len(args.dlEpisode) == 1:
+		args.dlEpisode = '0' + args.dlEpisode
 
 	#this is where the script happens
 	count = 0
 	phase = 0
+	yesProceed = True
 
 	while True: # <=
 		try: 
 
+			# main operation
 			episodeNumber = nyaasi.findEpisodeData(nyaasi.parsingNyaasi(nyaasi.urlRaiser(count)))
 
 			count += 1
@@ -204,8 +194,10 @@ def main():
 				continue
 
 			else:
+				latestEpisode = nyaasi.episodeListJustNumber[0]
+
 				if args.dlEpisode == 'all':
-					if nyaasi.episodeListJustNumber[-1] == '01':
+					if episodeNumber == '01':
 						#print('yes')
 						if phase == 0:
 							print("\r\nFINDING EPISODE 00!", end ="", flush=True)
@@ -216,27 +208,36 @@ def main():
 							print("\r\n\r\nTHERE IS NO EPISODE 00!")
 							break
 
-					elif nyaasi.episodeListJustNumber[-1] == '00':
+					elif episodeNumber == '00':
 						break
 
 				if args.dlEpisode != 'all':
-					if nyaasi.episodeListJustNumber[-1] == args.dlEpisode:
+
+					if ( nyaasi.isNumber( latestEpisode ) == True ) and ( int( latestEpisode ) < int( args.dlEpisode ) ):
+						print("\r\n\r\nTHE EPISODE IS NOT AVAILABLE")
+						print(f"THE LATEST ONE IS {latestEpisode}")
+
+						yesProceed = False
+						break
+
+					#print(nyaasi.episodeListJustNumber[-1] + "\r\n" + args.dlEpisode)
+					if episodeNumber == args.dlEpisode:
 						print("\r\n\r\nDONE!")
 						break
 
-		except Exception as e:
-			print(e)
+		except (Exception) as e:
+			print(str(e) + " LOOP ERROR")
 			break
 
 	selectedEpisode = args.dlEpisode
 
-	if args.dl == 'magnet':
+	if args.dl == 'magnet' and yesProceed:
 		nyaasi.downloadTorrent(nyaasi.magnetList, selectedEpisode)
 
-	elif args.dl == 'torrent':
+	elif args.dl == 'torrent' and yesProceed:
 		nyaasi.downloadTorrent(nyaasi.torrentList, selectedEpisode)
 
-	if args.save:
+	if args.save and yesProceed:
 		nyaasi.saveTorrent(nyaasi.magnetList, nyaasi.episodeList, 'magnet', selectedEpisode)
 		nyaasi.saveTorrent(nyaasi.torrentList, nyaasi.episodeList, 'torrent', selectedEpisode)
 
