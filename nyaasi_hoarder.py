@@ -9,7 +9,8 @@ import re
 
 
 class nyaasi_hoarder:
-	def __init__(self, subTeam, seriesName, selectedQuality):
+	def __init__(self, subTeam, seriesName, selectedQuality, selectedEpisode):
+		self.selectedEpisode = selectedEpisode
 		self.subTeam = subTeam
 
 		self.seriesName = seriesName
@@ -17,13 +18,6 @@ class nyaasi_hoarder:
 
 		self.masterUrl = 'https://nyaa.si'
 		self.tag = 'a'
-
-		self.episodeList = []
-		self.episodeListJustNumber = []
-		self.magnetList = []
-		self.torrentList = []
-		self.rawFilteredData = []
-
 
 		# add more if U like it.
 		self.subTeamDict = {
@@ -37,6 +31,10 @@ class nyaasi_hoarder:
 
 		else:
 			self.subTeamUrl = self.subTeam
+
+		# check/edit input
+		if len(self.selectedEpisode) == 1:
+			self.selectedEpisode = '0' + self.selectedEpisode
 
 		#DEBUG
 		#print(self.episodeListJustNumber)
@@ -85,6 +83,11 @@ class nyaasi_hoarder:
 
 			# this does most of the work to intepret the data including torrent, magnet, episode number, title, quality
 	def findEpisodeData(self, htmlCode):
+		self.episodeList = []
+		self.episodeListJustNumber = []
+		self.magnetList = []
+		self.torrentList = []
+		self.rawFilteredData = []
 
 			# from chunk of text to list
 		for htmlLinesWithSelectedClass in htmlCode.find_all('a'):
@@ -119,7 +122,6 @@ class nyaasi_hoarder:
 						episodeNumber = episodeFullTitle.replace(f"[{self.subTeam}]", "").replace(self.seriesName, "")[3:8].replace("[", "").replace(" ","")
 
 					if self.isNumber(episodeNumber) == True:
-						print(episodeFullTitle + ' FOUND!')
 
 						self.episodeListJustNumber.append(episodeNumber)
 						self.torrentList.append(self.masterUrl + torrentLink)
@@ -127,40 +129,123 @@ class nyaasi_hoarder:
 						self.episodeList.append(episodeFullTitle)
 
 						return episodeNumber
-					else:
-						pass
 
+	def startFindingEpisode(self):
+		pageCount = 0
+		pageCountOnEp00 = 0
+		startDedicatedTimeOut = True
+		pageTimeOutMax = 10
+		self.proceedToSaveData = True
+
+		print("SCRIPT STARTED!\r\n")
+		while True:
+			try: 
+				# main operation in this composition
+				episodeNumber = self.findEpisodeData( self.parsingNyaasi( self.urlRaiser(pageCount) ) )
+				#print(episodeNumber)
+
+				if episodeNumber:
+					print("", end="\r")
+					print( self.episodeList[self.episodeListJustNumber.index(episodeNumber)] + ' FOUND!' )
+
+				elif episodeNumber == None and pageCount > pageTimeOutMax and startDedicatedTimeOut == True:
+					if pageCount - pageTimeOutMax == 1:
+						print("LOOKING IN OLDER PAGES", end="", flush=True)
+
+					print(".", end="", flush=True)
+
+					if pageCount > (pageTimeOutMax + 10):
+						print("", end="\r")
+						print("\r\n")
+						print("SEARCH TIMED OUT")
+
+						if self.episodeList:
+							print(f"CERTAIN EPISODE CANNOT BE FOUND (Episode {'0' + str(( int(self.episodeListJustNumber[-1]) - 1 )) })")
+							self.proceedToSaveData = True
+
+						else:
+							print('THIS SERIES CANNOT BE FOUND')
+							self.proceedToSaveData = False
+
+						break
+
+				
+				pageCount += 1
+
+				if self.episodeListJustNumber == []:
+					continue
+	
 				else:
-					pass
+					#print(episodeNumber)
+
+					latestEpisode = self.episodeListJustNumber[0]
+					#print(episodeNumber)
+					if self.selectedEpisode == 'all':
+
+						if episodeNumber == '01' and pageCountOnEp00 == 0:
+							print("\r\nFINDING EPISODE 00!", end ="", flush=True)
+							startDedicatedTimeOut = False
+
+						elif episodeNumber == '00':
+							break
+
+						elif self.episodeListJustNumber[-1] =='01' and episodeNumber == None:
+							pageCountOnEp00 += 1
+							print(".", end="", flush=True)
+
+							if pageCountOnEp00 > 10:
+								print("\r\n\r\nTHERE IS NO EPISODE 00!")
+								break
+
+					if self.selectedEpisode != 'all':
+	
+							if ( self.isNumber( latestEpisode ) == True ) and ( int( latestEpisode ) < int( self.selectedEpisode ) ):
+								print("\r\nTHE EPISODE IS NOT AVAILABLE")
+								print(f"THE LATEST EPISODE IS {latestEpisode}")
+	
+								self.proceedToSaveData = False
+								break
+	
+							if episodeNumber == self.selectedEpisode:
+								print("\r\n\r\nDONE!")
+								break
+
+			except (Exception) as e:
+				print(str(e) + " LOOP ERROR")
+				break
 
 	def downloadTorrent(self, linkList, selectedEpisode):
-		if selectedEpisode == 'all':
-			for link in linkList:
-				webbrowser.open(link)
+		if linkList:
+
+			if selectedEpisode == 'all':
+				for link in linkList:
+					webbrowser.open(link)
 				
-		elif selectedEpisode != 'all':
-			webbrowser.open(linkList[-1])
+			elif selectedEpisode != 'all':
+				webbrowser.open(linkList[-1])
 
 	def saveTorrent(self, linkList, seriesList, linkType, selectedEpisode):
 		f = open(f"{self.seriesName} in {self.selectedQuality} magnet and torrent links.txt", 'a') # a means (makes a new file and) append on it 
 
-		if linkType == 'magnet':
-			f.write('Magnet links \r\n')
-		elif linkType == 'torrent':
-			f.write('Torrent links \r\n')
+		if linkList:
+
+			if linkType == 'magnet':
+				f.write('Magnet links \r\n')
+			elif linkType == 'torrent':
+				f.write('Torrent links \r\n')
 
 		
-		if selectedEpisode != 'all': 
-			f.write(selectedEpisode +": "+ linkList[-1] + "\r\n")
+			if selectedEpisode != 'all': 
+				f.write(seriesList[-1] +": "+ linkList[-1] + "\r\n") # some how I forgot how this works. The list will stop appending as soon as selected episode is in it. So the last value is good.
 
-		elif selectedEpisode == 'all': # selectedEpisode 0 is download in list.
-			for index, link in enumerate(linkList):
-				f.write(seriesList[index] +": "+ link + "\r\n")
+			elif selectedEpisode == 'all': # selectedEpisode 0 is download in list.
+				for index, link in enumerate(linkList):
+					f.write(seriesList[index] +": "+ link + "\r\n")
 
 def main():
 	parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [episode] [fan sub] [quality] [-dl magnet|torrent] or [-save]')
 	parser.add_argument(help='Put the actual series name here. If there is "-" sign in the name, use quotation mark ("") for the name.', action="store", dest='seriesName', nargs='*')
-	parser.add_argument('-ep', help='Episode number. Add 0 for episodes below 10. Ex: 09, 01, 00', action="store", dest='dlEpisode', default='all', nargs='?')
+	parser.add_argument('-ep', help='Number of the episode you want', action="store", dest='selectedEpisode', default='all', nargs='?')
 	parser.add_argument('-fs', help='Name of the fansub team (Judas is default)', action="store", dest='subTeam', default='Judas', nargs='?')
 	parser.add_argument('-q', help='1080p | 720p | 480p | 360p (1080p is default)', action="store", dest='selectedQuality', default='1080p', nargs='?')
 	parser.add_argument('-dl', default='', help='Torrent all files through magnet link', action="store")
@@ -171,95 +256,24 @@ def main():
 	seperator = ' '
 
 	# object
-	nyaasi = nyaasi_hoarder(str(args.subTeam), seperator.join(args.seriesName), args.selectedQuality)
+	nyaasi = nyaasi_hoarder(str(args.subTeam), seperator.join(args.seriesName), args.selectedQuality, args.selectedEpisode)
 
-	# check/edit input
-	if len(args.dlEpisode) == 1:
-		args.dlEpisode = '0' + args.dlEpisode
+	# function that do the works
+	nyaasi.startFindingEpisode()
 
-	#this is where the script happens
-	count = 0
-	phase = 0
-	yesProceed = True
+	if nyaasi.proceedToSaveData:
+		if args.dl == 'magnet':
+			nyaasi.downloadTorrent(nyaasi.magnetList, args.selectedEpisode)
 
-	while True: # <=
-		try: 
+		elif args.dl == 'torrent':
+			nyaasi.downloadTorrent(nyaasi.torrentList, args.selectedEpisode)
 
-			# main operation
-			episodeNumber = nyaasi.findEpisodeData(nyaasi.parsingNyaasi(nyaasi.urlRaiser(count)))
-
-			count += 1
-
-			if nyaasi.episodeListJustNumber == []:
-				continue
-
-			else:
-				latestEpisode = nyaasi.episodeListJustNumber[0]
-
-				if args.dlEpisode == 'all':
-					if episodeNumber == '01':
-						#print('yes')
-						if phase == 0:
-							print("\r\nFINDING EPISODE 00!", end ="", flush=True)
-						phase += 1
-						print(".", end="", flush=True)
-
-						if phase > 10:
-							print("\r\n\r\nTHERE IS NO EPISODE 00!")
-							break
-
-					elif episodeNumber == '00':
-						break
-
-				if args.dlEpisode != 'all':
-
-					if ( nyaasi.isNumber( latestEpisode ) == True ) and ( int( latestEpisode ) < int( args.dlEpisode ) ):
-						print("\r\n\r\nTHE EPISODE IS NOT AVAILABLE")
-						print(f"THE LATEST ONE IS {latestEpisode}")
-
-						yesProceed = False
-						break
-
-					#print(nyaasi.episodeListJustNumber[-1] + "\r\n" + args.dlEpisode)
-					if episodeNumber == args.dlEpisode:
-						print("\r\n\r\nDONE!")
-						break
-
-		except (Exception) as e:
-			print(str(e) + " LOOP ERROR")
-			break
-
-	selectedEpisode = args.dlEpisode
-
-	if args.dl == 'magnet' and yesProceed:
-		nyaasi.downloadTorrent(nyaasi.magnetList, selectedEpisode)
-
-	elif args.dl == 'torrent' and yesProceed:
-		nyaasi.downloadTorrent(nyaasi.torrentList, selectedEpisode)
-
-	if args.save and yesProceed:
-		nyaasi.saveTorrent(nyaasi.magnetList, nyaasi.episodeList, 'magnet', selectedEpisode)
-		nyaasi.saveTorrent(nyaasi.torrentList, nyaasi.episodeList, 'torrent', selectedEpisode)
-
-def debugAAA():
-	parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [episode] [fan sub] [quality] [-dl magnet|torrent] or [-save]')
-	parser.add_argument(help='Put the actual series name here. If there is "-" sign in the name, use quotation mark ("") for the name.', action="store", dest='seriesName', nargs='*')
-	parser.add_argument('-ep', help='Episode number. Add 0 for episodes below 10. Ex: 09, 01, 00', action="store", dest='dlEpisode', default='all', nargs='?')
-	parser.add_argument('-fs', help='Name of the fansub team (Judas is default)', action="store", dest='subTeam', default='Judas', nargs='?')
-	parser.add_argument('-q', help='1080p | 720p | 480p | 360p (1080p is default)', action="store", dest='selectedQuality', default='1080p', nargs='?')
-	parser.add_argument('-dl', default='', help='Torrent all files through magnet link', action="store")
-	parser.add_argument('-save', default='', help='Save links in a txt file', action="store_true")
-	args = parser.parse_args()
-
-
-	seperator = ' '
-
-	# object
-	nyaasi = nyaasi_hoarder(str(args.subTeam), seperator.join(args.seriesName), args.selectedQuality)
-
-	print(nyaasi.convertEpisodeFormatFromFullToNumber('ReZERO S01E14'))
+		if args.save:
+			nyaasi.saveTorrent(nyaasi.magnetList, nyaasi.episodeList, 'magnet', args.selectedEpisode)
+			nyaasi.saveTorrent(nyaasi.torrentList, nyaasi.episodeList, 'torrent', args.selectedEpisode)
+	else:
+		print("\r\nPLEASE TRY AGAIN")
 
 
 if __name__ == '__main__':
 	main()
-	#debugAAA()
