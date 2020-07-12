@@ -42,8 +42,12 @@ class nyaasi_hoarder:
 			self.subTeamUrl = self.subTeam
 
 		# check/edit input
-		if len(self.selectedEpisode) == 1:
+		if self.selectedEpisode == 'latest':
+			pass
+
+		elif len(self.selectedEpisode) == 1:
 			self.selectedEpisode = '0' + self.selectedEpisode
+
 
 		#DEBUG
 		#print(self.episodeListJustNumber)
@@ -202,20 +206,25 @@ class nyaasi_hoarder:
 
 					if self.selectedEpisode != 'all':
 	
-							if ( self.isNumber( latestEpisode ) == True ) and ( int( latestEpisode ) < int( self.selectedEpisode ) ):
+							if self.selectedEpisode != 'latest' and ( self.isNumber( latestEpisode ) == True ) and ( int( latestEpisode ) < int( self.selectedEpisode ) ):
 								print("\r\nTHE EPISODE IS NOT AVAILABLE")
 								print(f"THE LATEST EPISODE IS {latestEpisode}")
-	
 								self.proceedToSaveData = False
 								break
 	
 							if episodeNumber == self.selectedEpisode:
-								print("\r\n\r\nDONE!")
 								break
+
+							if self.selectedEpisode == "latest" and episodeNumber == latestEpisode:
+								break
+
+
 
 			except (Exception) as e:
 				print(str(e) + " LOOP ERROR")
 				break
+
+		print('\r\nSCRIPT DONE!')
 
 	def downloadTorrent(self, linkList, selectedEpisode):
 		if linkList:
