@@ -16,6 +16,12 @@ class nyaasi_hoarder:
 		self.seriesName = seriesName
 		self.selectedQuality = selectedQuality
 
+		self.episodeList = []
+		self.episodeListJustNumber = []
+		self.magnetList = []
+		self.torrentList = []
+		self.rawFilteredData = []
+
 		self.masterUrl = 'https://nyaa.si'
 		self.tag = 'a'
 
@@ -23,7 +29,10 @@ class nyaasi_hoarder:
 		self.subTeamDict = {
 		"EMBER": "Ember_Encodes",
 		"HR": "HR-Minifreeza",
-		"YakuboEncodes": "yakubo"
+		"YakuboEncodes": "yakubo",
+		"Raze": "Raze876",
+		"Anime Time": "sff",
+		"FFA": "FreeForAll",
 		}
 
 		if self.subTeam in self.subTeamDict:
@@ -83,11 +92,6 @@ class nyaasi_hoarder:
 
 			# this does most of the work to intepret the data including torrent, magnet, episode number, title, quality
 	def findEpisodeData(self, htmlCode):
-		self.episodeList = []
-		self.episodeListJustNumber = []
-		self.magnetList = []
-		self.torrentList = []
-		self.rawFilteredData = []
 
 			# from chunk of text to list
 		for htmlLinesWithSelectedClass in htmlCode.find_all('a'):
@@ -169,33 +173,32 @@ class nyaasi_hoarder:
 
 						break
 
-				
 				pageCount += 1
 
 				if self.episodeListJustNumber == []:
 					continue
 	
 				else:
-					#print(episodeNumber)
-
 					latestEpisode = self.episodeListJustNumber[0]
-					#print(episodeNumber)
+
 					if self.selectedEpisode == 'all':
 
 						if episodeNumber == '01' and pageCountOnEp00 == 0:
 							print("\r\nFINDING EPISODE 00!", end ="", flush=True)
 							startDedicatedTimeOut = False
+							pageCountOnEp00 += 1
 
 						elif episodeNumber == '00':
 							break
 
-						elif self.episodeListJustNumber[-1] =='01' and episodeNumber == None:
-							pageCountOnEp00 += 1
+						elif pageCountOnEp00 > 0:
 							print(".", end="", flush=True)
 
 							if pageCountOnEp00 > 10:
 								print("\r\n\r\nTHERE IS NO EPISODE 00!")
 								break
+
+							pageCountOnEp00 += 1
 
 					if self.selectedEpisode != 'all':
 	
