@@ -257,11 +257,11 @@ class nyaasi_hoarder:
 def main():
 	parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [episode] [fan sub] [quality] [-dl magnet|torrent] or [-save]')
 	parser.add_argument(help='Put the actual series name here. If there is "-" sign in the name, use quotation mark ("") for the name.', action="store", dest='seriesName', nargs='*')
-	parser.add_argument('-ep', help='Number of the episode you want', action="store", dest='selectedEpisode', default='all', nargs='?')
-	parser.add_argument('-fs', help='Name of the fansub team (Judas is default)', action="store", dest='subTeam', default='Judas', nargs='?')
-	parser.add_argument('-q', help='1080p | 720p | 480p | 360p (1080p is default)', action="store", dest='selectedQuality', default='1080p', nargs='?')
-	parser.add_argument('-dl', default='', help='Torrent all files through magnet link', action="store")
-	parser.add_argument('-save', default='', help='Save links in a txt file', action="store_true")
+	parser.add_argument('-ep', help='Number of the episode you want. You can use `latest` to download the latest episode. Default is `all`', action="store", dest='selectedEpisode', default='all', nargs='?')
+	parser.add_argument('-fs', help='Name of the fansub team. Default is `Judas`', action="store", dest='subTeam', default='Judas', nargs='?')
+	parser.add_argument('-q', help='1080p | 720p | 480p | 360p . Default is `1080p`', action="store", dest='selectedQuality', default='1080p', nargs='?')
+	parser.add_argument('-dl', default='', help='torrent | magnet', action="store")
+	parser.add_argument('-save', default='', help='Save links into a txt file', action="store_true")
 	args = parser.parse_args()
 
 
