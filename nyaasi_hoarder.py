@@ -9,7 +9,7 @@ import re
 
 
 class nyaasi_hoarder:
-	def __init__(self, subTeam, seriesName, selectedQuality, selectedEpisode):
+	def __init__(self, seriesName, selectedEpisode, selectedQuality, subTeam):
 		self.selectedEpisode = selectedEpisode
 		self.subTeam = subTeam
 
@@ -104,7 +104,7 @@ class nyaasi_hoarder:
 		for entriesIn_rawFilteredData_Index, entriesIn_rawFilteredData in enumerate(self.rawFilteredData):
 
 			# casually filtering text
-			if self.selectedQuality in entriesIn_rawFilteredData and self.seriesName in entriesIn_rawFilteredData and self.subTeam in entriesIn_rawFilteredData and "magnet:?" not in entriesIn_rawFilteredData:
+			if self.selectedQuality in entriesIn_rawFilteredData and self.seriesName.lower() in entriesIn_rawFilteredData.lower() and self.subTeam in entriesIn_rawFilteredData and "magnet:?" not in entriesIn_rawFilteredData:
 
 				# at this point, I forgot how these things work. I think they are in the quotation mark ("") so this just takes all the text in it.
 				# if the website changes, this would be the first thing that breaks
@@ -255,20 +255,49 @@ class nyaasi_hoarder:
 					f.write(seriesList[index] +": "+ link + "\r\n")
 
 def main():
-	parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [episode] [fan sub] [quality] [-dl magnet|torrent] or [-save]')
+	# default settings
+	d_seriesName = ""
+	d_subTeam = 'Judas'
+	d_selectedQuality = '1080p'
+	d_selectedEpisode = 'all'
+
+	parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [episode] [quality] [fan sub] [-dl magnet|torrent] or [-save]')
 	parser.add_argument(help='Put the actual series name here. If there is "-" sign in the name, use quotation mark ("") for the name.', action="store", dest='seriesName', nargs='*')
-	parser.add_argument('-ep', help='Number of the episode you want. You can use `latest` to download the latest episode. Default is `all`', action="store", dest='selectedEpisode', default='all', nargs='?')
-	parser.add_argument('-fs', help='Name of the fansub team. Default is `Judas`', action="store", dest='subTeam', default='Judas', nargs='?')
-	parser.add_argument('-q', help='1080p | 720p | 480p | 360p . Default is `1080p`', action="store", dest='selectedQuality', default='1080p', nargs='?')
+	parser.add_argument('-ep', help='Number of the episode you want. You can use `latest` to download the latest episode. Default is `all`', action="store", dest='selectedEpisode', default=d_selectedEpisode, nargs='?')
+	parser.add_argument('-q', help='1080p | 720p | 480p | 360p . Default is `1080p`', action="store", dest='selectedQuality', default=d_selectedQuality, nargs='?')
+	parser.add_argument('-fs', help='Name of the fansub team. Default is `Judas`', action="store", dest='subTeam', default=d_subTeam, nargs='?')
 	parser.add_argument('-dl', default='', help='torrent | magnet', action="store")
 	parser.add_argument('-save', default='', help='Save links into a txt file', action="store_true")
 	args = parser.parse_args()
 
-
+	# seriesName is input to a list instead of a string so it needs to be joined
 	seperator = ' '
+	if args.seriesName: args.seriesName = seperator.join(args.seriesName)
 
-	# object
-	nyaasi = nyaasi_hoarder(str(args.subTeam), seperator.join(args.seriesName), args.selectedQuality, args.selectedEpisode)
+	# switch name so it's easier to read
+	subTeam = args.subTeam
+	selectedQuality = args.selectedQuality
+	seriesName = args.seriesName
+	selectedEpisode = args.selectedEpisode
+
+	if not seriesName:
+		while not seriesName:
+			seriesName = input("Series Name: ")
+		selectedEpisode = input("Episode: ")
+		if not selectedEpisode:	selectedEpisode = d_selectedEpisode
+
+		selectedQuality = input("Quality: ")
+		if not selectedQuality:	selectedQuality = d_selectedQuality
+
+		subTeam = input("Sub team: ")
+		if not subTeam:	subTeam = d_subTeam
+
+		saving = input("Download/save? (torrent,magnet,save): ")
+		if 'save' in saving: args.save = 1
+		elif 'torrent' in saving or 'magnet' in saving: args.dl = saving
+		else: (lambda __print: (__print('try again'), (quit(), None)[1])[1])(__import__('__builtin__', level=0).__dict__['print'])
+
+	nyaasi = nyaasi_hoarder(seriesName, selectedEpisode, selectedQuality, subTeam)
 
 	# function that do the works
 	nyaasi.startFindingEpisode()
