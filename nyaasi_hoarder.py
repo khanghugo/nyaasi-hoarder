@@ -103,7 +103,7 @@ class nyaasi_hoarder:
 		for entriesIn_rawFilteredData_Index, entriesIn_rawFilteredData in enumerate(self.rawFilteredData):
 
 			# casually filtering text
-			if self.selectedQuality in entriesIn_rawFilteredData and self.seriesName.lower() in entriesIn_rawFilteredData.lower() and self.subTeam in entriesIn_rawFilteredData and "magnet:?" not in entriesIn_rawFilteredData:
+			if self.selectedQuality in entriesIn_rawFilteredData and self.seriesName in entriesIn_rawFilteredData and self.subTeam in entriesIn_rawFilteredData and "magnet:?" not in entriesIn_rawFilteredData:
 
 				# at this point, I forgot how these things work. I think they are in the quotation mark ("") so this just takes all the text in it.
 				# if the website changes, this would be the first thing that breaks
