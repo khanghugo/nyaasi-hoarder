@@ -7,7 +7,6 @@ import re
 # python nyaasi_hoarder.py Gundam Build Divers Re-RISE -fs HorribleSubs -q 1080p -save
 # python nyaasi_hoarder.py Dorohedoro -ep 09 -q 1080p -dl magnet
 
-
 class nyaasi_hoarder:
 	def __init__(self, seriesName, selectedEpisode, selectedQuality, subTeam):
 		self.selectedEpisode = selectedEpisode
@@ -21,6 +20,7 @@ class nyaasi_hoarder:
 		self.magnetList = []
 		self.torrentList = []
 		self.rawFilteredData = []
+		self.timeUploaded = []
 
 		self.masterUrl = 'https://nyaa.si'
 		self.tag = 'a'
@@ -63,13 +63,6 @@ class nyaasi_hoarder:
 		except:
 			return False
 
-
-		# getting the html. I just look up online for this method.
-	# def parsingNyaasi(self, url):
-	# 	response = requests.get(url)
-	# 	strainer = SoupStrainer(self.tag)
-	# 	soup = BeautifulSoup(response.text, "lxml", parse_only=strainer)
-	# 	return soup
 	def parsingNyaasi(self, url):
 		response = requests.get(url)
 		soup = BeautifulSoup(response.text, "lxml")
@@ -98,41 +91,26 @@ class nyaasi_hoarder:
 
 			# this does most of the work to intepret the data including torrent, magnet, episode number, title, quality
 	def findEpisodeData(self, htmlCode):
-
 			# from chunk of text to list
-		for htmlLinesWithSelectedClass in htmlCode.find_all('a'):
-			# todo, chang the tag from 'a' to 'td'
-			# for i in html1:
-			# 	if "Black Clover" in str(i):
-			# 		index....
-			# title = re.findall(.......)[6] # numba six
-			# magnet + torrent in index + 1
-# 			>>> html1[586]
-# <td class="text-center">
-# <a href="/download/1240866.torrent"><i class="fa fa-fw fa-download"></i></a>
-# <a href="magnet:?xt=urn:btih:0f442116aca19b8ed82404962863653076c13beb&amp;dn=%5BJudas%5D%20Black%20Clover%20091-123%20%5B1080p%5D%5BHEVC%20x265%2010bit%5D%5BDual-Audio%5D%5BMulti-Subs%5D%20%28Batch%29&amp;tr=http%3A%2F%2Fnyaa.tracker.wf%3A7777%2Fannounce&amp;tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&amp;tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&amp;tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969%2Fannounce&amp;tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce"><i class="fa fa-fw fa-magnet"></i></a>
-# </td>
-			# use find_all? to filter?
-			# index + 2 = size
-			# index + 3 = time uploaded
-
+		for htmlLinesWithSelectedClass in htmlCode.find_all('td'):
 			self.rawFilteredData.append(str(htmlLinesWithSelectedClass))
 
 		for entriesIn_rawFilteredData_Index, entriesIn_rawFilteredData in enumerate(self.rawFilteredData):
-
 			# casually filtering text
 			if self.selectedQuality in entriesIn_rawFilteredData and self.seriesName in entriesIn_rawFilteredData and self.subTeam in entriesIn_rawFilteredData and "magnet:?" not in entriesIn_rawFilteredData:
-
 				# at this point, I forgot how these things work. I think they are in the quotation mark ("") so this just takes all the text in it.
 				# if the website changes, this would be the first thing that breaks
-				episodeFullTitle = re.findall('"([^"]*)"', str(self.rawFilteredData[entriesIn_rawFilteredData_Index]))[1]
+				#print(self.rawFilteredData[entriesIn_rawFilteredData_Index])
+				episodeFullTitle = re.findall('"([^"]*)"', str(self.rawFilteredData[entriesIn_rawFilteredData_Index]))[-1]
 
-				torrentLink = re.findall('"([^"]*)"', str(self.rawFilteredData[entriesIn_rawFilteredData_Index + 1]))[0]
-				magnetLink = re.findall('"([^"]*)"', str(self.rawFilteredData[entriesIn_rawFilteredData_Index + 2]))[0]
+				links = re.findall('"([^"]*)"', str(self.rawFilteredData[entriesIn_rawFilteredData_Index + 1]))
+				torrentLink = links[1]
+				magnetLink = links[3]
 
-				# throughout the html, there are many times when the title repeats, it just makes sure that doesn't happen.
+				timeUploaded = re.findall('"([^"]*)"', str(self.rawFilteredData[entriesIn_rawFilteredData_Index + 3]))[1]
+
+				#throughout the html, there are many times when the title repeats, it just makes sure that doesn't happen.
 				if episodeFullTitle not in self.episodeList:
-
 					# this method will decide what is the episode number cuz it's important
 					# because right now there are two ways that people express the episode numbers, I have to use try and except
 					# upcoming, I have to work around to read the season and not including it to the episodeList
@@ -152,6 +130,7 @@ class nyaasi_hoarder:
 						self.torrentList.append(self.masterUrl + torrentLink)
 						self.magnetList.append(magnetLink)
 						self.episodeList.append(episodeFullTitle)
+						self.timeUploaded.append(timeUploaded)
 
 						return episodeNumber
 
@@ -159,7 +138,7 @@ class nyaasi_hoarder:
 		pageCount = 0
 		pageCountOnEp00 = 0
 		startDedicatedTimeOut = True
-		pageTimeOutMax = 10
+		pageTimeOutMax = 5
 		self.proceedToSaveData = True
 
 		print("SCRIPT STARTED!\r\n")
@@ -215,7 +194,7 @@ class nyaasi_hoarder:
 						elif pageCountOnEp00 > 0:
 							print(".", end="", flush=True)
 
-							if pageCountOnEp00 > 10:
+							if pageCountOnEp00 > pageTimeOutMax:
 								print("\r\n\r\nTHERE IS NO EPISODE 00!")
 								break
 
@@ -235,8 +214,6 @@ class nyaasi_hoarder:
 							if self.selectedEpisode == "latest" and episodeNumber == latestEpisode:
 								break
 
-
-
 			except (Exception) as e:
 				print(str(e) + " LOOP ERROR")
 				break
@@ -254,22 +231,20 @@ class nyaasi_hoarder:
 				webbrowser.open(linkList[-1])
 
 	def saveTorrent(self, linkList, seriesList, linkType, selectedEpisode):
-		f = open(f"{self.seriesName} in {self.selectedQuality} magnet and torrent links.txt", 'a') # a means (makes a new file and) append on it 
+		with open(f"{self.seriesName} in {self.selectedQuality} magnet and torrent links.txt", 'a') as f: # a means (makes a new file and) append on it 
+			if linkList:
 
-		if linkList:
+				if linkType == 'magnet':
+					f.write('Magnet links \r\n')
+				elif linkType == 'torrent':
+					f.write('Torrent links \r\n')
 
-			if linkType == 'magnet':
-				f.write('Magnet links \r\n')
-			elif linkType == 'torrent':
-				f.write('Torrent links \r\n')
+				if selectedEpisode != 'all': 
+					f.write(seriesList[-1] +": "+ linkList[-1] + "\r\n") # some how I forgot how this works. The list will stop appending as soon as selected episode is in it. So the last value is good.
 
-		
-			if selectedEpisode != 'all': 
-				f.write(seriesList[-1] +": "+ linkList[-1] + "\r\n") # some how I forgot how this works. The list will stop appending as soon as selected episode is in it. So the last value is good.
-
-			elif selectedEpisode == 'all': # selectedEpisode 0 is download in list.
-				for index, link in enumerate(linkList):
-					f.write(seriesList[index] +": "+ link + "\r\n")
+				elif selectedEpisode == 'all': # selectedEpisode 0 is download in list.
+					for index, link in enumerate(linkList):
+						f.write(seriesList[index] +": "+ link + "\r\n")
 
 def main():
 	# default settings
@@ -330,7 +305,16 @@ def main():
 			nyaasi.saveTorrent(nyaasi.torrentList, nyaasi.episodeList, 'torrent', selectedEpisode)
 	else:
 		print("\r\nPLEASE TRY AGAIN")
+	
+def debug():
+	seriesName = 'The God of High School'
+	subTeam = 'EMBER'
+	selectedQuality = '1080p'
+	selectedEpisode = 'all'
 
+	nyaasi = nyaasi_hoarder(seriesName, selectedEpisode, selectedQuality, subTeam)
+	nyaasi.findEpisodeData(nyaasi.parsingNyaasi('https://nyaa.si/user/Ember_Encodes'))
 
 if __name__ == '__main__':
 	main()
+	#debug()
