@@ -66,7 +66,6 @@ class nyaasi_hoarder:
 
 		# getting the html. I just look up online for this method.
 	def parsingNyaasi(self, url):
-		session = requests.Session()
 		response = requests.get(url)
 		strainer = SoupStrainer(self.tag)
 		soup = BeautifulSoup(response.text, "lxml", parse_only=strainer)
@@ -256,7 +255,6 @@ class nyaasi_hoarder:
 
 def main():
 	# default settings
-	d_seriesName = ""
 	d_subTeam = 'Judas'
 	d_selectedQuality = '1080p'
 	d_selectedEpisode = 'all'
@@ -310,8 +308,8 @@ def main():
 			nyaasi.downloadTorrent(nyaasi.torrentList, args.selectedEpisode)
 
 		if args.save:
-			nyaasi.saveTorrent(nyaasi.magnetList, nyaasi.episodeList, 'magnet', args.selectedEpisode)
-			nyaasi.saveTorrent(nyaasi.torrentList, nyaasi.episodeList, 'torrent', args.selectedEpisode)
+			nyaasi.saveTorrent(nyaasi.magnetList, nyaasi.episodeList, 'magnet', selectedEpisode)
+			nyaasi.saveTorrent(nyaasi.torrentList, nyaasi.episodeList, 'torrent', selectedEpisode)
 	else:
 		print("\r\nPLEASE TRY AGAIN")
 
