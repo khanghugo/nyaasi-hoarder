@@ -65,12 +65,15 @@ class nyaasi_hoarder:
 
 
 		# getting the html. I just look up online for this method.
+	# def parsingNyaasi(self, url):
+	# 	response = requests.get(url)
+	# 	strainer = SoupStrainer(self.tag)
+	# 	soup = BeautifulSoup(response.text, "lxml", parse_only=strainer)
+	# 	return soup
 	def parsingNyaasi(self, url):
 		response = requests.get(url)
-		strainer = SoupStrainer(self.tag)
-		soup = BeautifulSoup(response.text, "lxml", parse_only=strainer)
+		soup = BeautifulSoup(response.text, "lxml")
 		return soup
-
 		# some titles have adopted new formats like "S01E02" and is totally different from what they used to be. So this converts it to understandable info
 	def convertEpisodeFormatFromFullToNumber(self, episodeFullTitle):
 
@@ -98,6 +101,21 @@ class nyaasi_hoarder:
 
 			# from chunk of text to list
 		for htmlLinesWithSelectedClass in htmlCode.find_all('a'):
+			# todo, chang the tag from 'a' to 'td'
+			# for i in html1:
+			# 	if "Black Clover" in str(i):
+			# 		index....
+			# title = re.findall(.......)[6] # numba six
+			# magnet + torrent in index + 1
+# 			>>> html1[586]
+# <td class="text-center">
+# <a href="/download/1240866.torrent"><i class="fa fa-fw fa-download"></i></a>
+# <a href="magnet:?xt=urn:btih:0f442116aca19b8ed82404962863653076c13beb&amp;dn=%5BJudas%5D%20Black%20Clover%20091-123%20%5B1080p%5D%5BHEVC%20x265%2010bit%5D%5BDual-Audio%5D%5BMulti-Subs%5D%20%28Batch%29&amp;tr=http%3A%2F%2Fnyaa.tracker.wf%3A7777%2Fannounce&amp;tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&amp;tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&amp;tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969%2Fannounce&amp;tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce"><i class="fa fa-fw fa-magnet"></i></a>
+# </td>
+			# use find_all? to filter?
+			# index + 2 = size
+			# index + 3 = time uploaded
+
 			self.rawFilteredData.append(str(htmlLinesWithSelectedClass))
 
 		for entriesIn_rawFilteredData_Index, entriesIn_rawFilteredData in enumerate(self.rawFilteredData):
