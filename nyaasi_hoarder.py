@@ -255,6 +255,9 @@ def main():
 	d_subTeam = 'Judas'
 	d_selectedQuality = '1080p'
 	d_selectedEpisode = 'all'
+	selectedEpisode_options = ['latest', 'all', ""]
+	selectedQuality_options = ['1080p', '720p', '480p', '360p', ""]
+	saving_options = ['save', 'torrent', 'magnet', ""]
 
 	parser = argparse.ArgumentParser(prog='nyaasi-hoarder',usage='%(prog)s [name] [episode] [quality] [fan sub] [-dl magnet|torrent] or [-save]')
 	parser.add_argument(help='Put the actual series name here. If there is "-" sign in the name, use quotation mark ("") for the name.', action="store", dest='seriesName', nargs='*')
@@ -274,23 +277,50 @@ def main():
 	selectedQuality = args.selectedQuality
 	seriesName = args.seriesName
 	selectedEpisode = args.selectedEpisode
+	dl = args.dl
+	save = args.save 
 
 	if not seriesName:
-		while not seriesName:
-			seriesName = input("Series Name: ")
-		selectedEpisode = input("Episode: ")
-		if not selectedEpisode:	selectedEpisode = d_selectedEpisode
+		# name input
+		seriesName = input("Series Name: ")
 
-		selectedQuality = input("Quality: ")
-		if not selectedQuality:	selectedQuality = d_selectedQuality
+		#episode input
+		while True:
+			selectedEpisode = input("Episode: ")
+			try:
+				int(selectedEpisode)
+				break
+			except ValueError:
+				if selectedEpisode in selectedEpisode_options:
+					break
+		
+		# quality input
+		while True:
+			selectedQuality = input("Quality: ")
+			try:
+				if selectedQuality in selectedQuality_options:
+					break
+			except:
+				break
 
+		# sub input
 		subTeam = input("Sub team: ")
-		if not subTeam:	subTeam = d_subTeam
+		
+		# saving input
+		while True:
+			saving = input("Download/save? (torrent,magnet,save): ")
+			try: 
+				if saving in saving_options:
+					if 'save' in saving: save = 1
+					elif 'torrent' in saving or 'magnet' in saving: dl = saving
+					break
+			except:
+				break
 
-		saving = input("Download/save? (torrent,magnet,save): ")
-		if 'save' in saving: args.save = 1
-		elif 'torrent' in saving or 'magnet' in saving: args.dl = saving
-		else: (lambda __print: (__print('try again'), (quit(), None)[1])[1])(__import__('__builtin__', level=0).__dict__['print'])
+	if not selectedEpisode:	selectedEpisode = d_selectedEpisode
+	if not selectedQuality:	selectedQuality = d_selectedQuality
+	if not subTeam:	subTeam = d_subTeam
+	if not save and not dl: save = 1
 
 	nyaasi = nyaasi_hoarder(seriesName, selectedEpisode, selectedQuality, subTeam)
 
@@ -298,13 +328,13 @@ def main():
 	nyaasi.startFindingEpisode()
 
 	if nyaasi.proceedToSaveData:
-		if args.dl == 'magnet':
+		if dl == 'magnet':
 			nyaasi.downloadTorrent(nyaasi.magnetList, args.selectedEpisode)
 
-		elif args.dl == 'torrent':
+		elif dl == 'torrent':
 			nyaasi.downloadTorrent(nyaasi.torrentList, args.selectedEpisode)
 
-		if args.save:
+		if save:
 			nyaasi.saveTorrent(nyaasi.magnetList, nyaasi.episodeList, 'magnet', selectedEpisode)
 			nyaasi.saveTorrent(nyaasi.torrentList, nyaasi.episodeList, 'torrent', selectedEpisode)
 	else:
