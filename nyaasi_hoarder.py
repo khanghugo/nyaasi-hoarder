@@ -63,10 +63,19 @@ class nyaasi_hoarder:
 		except:
 			return False
 
+	def remove_spec_chars(self, s):
+		unaccepted_keys = ['?', '/', '\\', '<', '>', '|', '*', ':', '"', "_"]
+		# windows naming is weird
+		for i in unaccepted_keys:
+			s = s.replace(i, ' ')
+
+		return s
+
 	def parsingNyaasi(self, url):
 		response = requests.get(url)
 		soup = BeautifulSoup(response.text, "lxml")
 		return soup
+
 		# some titles have adopted new formats like "S01E02" and is totally different from what they used to be. So this converts it to understandable info
 	def convertEpisodeFormatFromFullToNumber(self, episodeFullTitle):
 
@@ -89,7 +98,7 @@ class nyaasi_hoarder:
 				print(e)
 				break
 
-			# this does most of the work to intepret the data including torrent, magnet, episode number, title, quality
+	# this does most of the work to intepret the data including torrent, magnet, episode number, title, quality
 	def findEpisodeData(self, htmlCode):
 			# from chunk of text to list
 		for htmlLinesWithSelectedClass in htmlCode.find_all('td'):
@@ -97,7 +106,7 @@ class nyaasi_hoarder:
 
 		for entriesIn_rawFilteredData_Index, entriesIn_rawFilteredData in enumerate(self.rawFilteredData):
 			# casually filtering text
-			if self.selectedQuality in entriesIn_rawFilteredData and self.seriesName in entriesIn_rawFilteredData and self.subTeam in entriesIn_rawFilteredData and "magnet:?" not in entriesIn_rawFilteredData:
+			if self.selectedQuality in entriesIn_rawFilteredData and ( self.seriesName in entriesIn_rawFilteredData or self.remove_spec_chars(self.seriesName) in entriesIn_rawFilteredData ) and self.subTeam in entriesIn_rawFilteredData:
 				# at this point, I forgot how these things work. I think they are in the quotation mark ("") so this just takes all the text in it.
 				# if the website changes, this would be the first thing that breaks
 				#print(self.rawFilteredData[entriesIn_rawFilteredData_Index])
@@ -114,15 +123,20 @@ class nyaasi_hoarder:
 					# this method will decide what is the episode number cuz it's important
 					# because right now there are two ways that people express the episode numbers, I have to use try and except
 					# upcoming, I have to work around to read the season and not including it to the episodeList
-					try:
-						seasonNumber, episodeNumber = self.convertEpisodeFormatFromFullToNumber(episodeFullTitle)
+					# now i realize each team has different naming scheme, right now, this code supprot one certain group, code is not scalable yet
+					if self.subTeam != 'Raze':
+						try:
+							seasonNumber, episodeNumber = self.convertEpisodeFormatFromFullToNumber(episodeFullTitle)
+							# just necessary measurements
+							int(seasonNumber)
+							int(episodeNumber)
+	
+						except:
+							episodeNumber = episodeFullTitle.replace(f"[{self.subTeam}]", "").replace(self.seriesName, "")[3:8].replace("	[", "").replace(" ","")
 
-						# just necessary measurements
-						int(seasonNumber)
-						int(episodeNumber)
-
-					except:
-						episodeNumber = episodeFullTitle.replace(f"[{self.subTeam}]", "").replace(self.seriesName, "")[3:8].replace("[", "").replace(" ","")
+					if self.subTeam == 'Raze':
+						s = episodeFullTitle[:-10].replace(f" x264 {self.selectedQuality}","")
+						episodeNumber = s[len(s)-5:].replace('-', '').strip()
 
 					if self.isNumber(episodeNumber) == True:
 
@@ -133,7 +147,7 @@ class nyaasi_hoarder:
 						self.timeUploaded.append(timeUploaded)
 
 						return episodeNumber
-
+						
 	def startFindingEpisode(self):
 		pageCount = 0
 		pageCountOnEp00 = 0
@@ -231,12 +245,7 @@ class nyaasi_hoarder:
 				webbrowser.open(linkList[-1])
 
 	def saveTorrent(self, linkList, seriesList, linkType, selectedEpisode):
-		unaccepted_keys = ['?', '/', '\\', '<', '>', '|', '*', ':', '"']
-		seriesName = self.seriesName
-
-		# windows naming is weird
-		for i in unaccepted_keys:
-			seriesName = seriesName.replace(i, ' ')
+		seriesName = self.remove_spec_chars(self.seriesName)
 
 		with open(f"{seriesName} in {self.selectedQuality} magnet and torrent links.txt", 'a') as f: # a means (makes a new file and) append on it 
 			if linkList:
@@ -341,13 +350,13 @@ def main():
 		print("\r\nPLEASE TRY AGAIN")
 	
 def debug():
-	seriesName = 'The God of High School'
-	subTeam = 'EMBER'
+	seriesName = 'Re:Zero'
+	subTeam = 'Raze'
 	selectedQuality = '1080p'
 	selectedEpisode = 'all'
 
 	nyaasi = nyaasi_hoarder(seriesName, selectedEpisode, selectedQuality, subTeam)
-	nyaasi.findEpisodeData(nyaasi.parsingNyaasi('https://nyaa.si/user/Ember_Encodes'))
+	nyaasi.findEpisodeData(nyaasi.parsingNyaasi('https://nyaa.si/user/Raze876'))
 
 if __name__ == '__main__':
 	main()
