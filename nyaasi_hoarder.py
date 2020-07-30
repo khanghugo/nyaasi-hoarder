@@ -1,5 +1,5 @@
 import requests
-from bs4 import BeautifulSoup, SoupStrainer
+from bs4 import BeautifulSoup
 import argparse
 import webbrowser
 import re
@@ -107,7 +107,7 @@ class nyaasi_hoarder:
 				torrentLink = links[1]
 				magnetLink = links[3]
 
-				timeUploaded = re.findall('"([^"]*)"', str(self.rawFilteredData[entriesIn_rawFilteredData_Index + 3]))[1]
+				timeUploaded = int(re.findall('"([^"]*)"', str(self.rawFilteredData[entriesIn_rawFilteredData_Index + 3]))[1])
 
 				#throughout the html, there are many times when the title repeats, it just makes sure that doesn't happen.
 				if episodeFullTitle not in self.episodeList:
@@ -231,17 +231,21 @@ class nyaasi_hoarder:
 				webbrowser.open(linkList[-1])
 
 	def saveTorrent(self, linkList, seriesList, linkType, selectedEpisode):
-		with open(f"{self.seriesName} in {self.selectedQuality} magnet and torrent links.txt", 'a') as f: # a means (makes a new file and) append on it 
-			if linkList:
+		unaccepted_keys = ['?', '/', '\\', '<', '>', '|', '*', ':', '"']
+		seriesName = self.seriesName
 
+		# windows naming is weird
+		for i in unaccepted_keys:
+			seriesName = seriesName.replace(i, ' ')
+
+		with open(f"{seriesName} in {self.selectedQuality} magnet and torrent links.txt", 'a') as f: # a means (makes a new file and) append on it 
+			if linkList:
 				if linkType == 'magnet':
 					f.write('Magnet links \r\n')
 				elif linkType == 'torrent':
 					f.write('Torrent links \r\n')
-
 				if selectedEpisode != 'all': 
 					f.write(seriesList[-1] +": "+ linkList[-1] + "\r\n") # some how I forgot how this works. The list will stop appending as soon as selected episode is in it. So the last value is good.
-
 				elif selectedEpisode == 'all': # selectedEpisode 0 is download in list.
 					for index, link in enumerate(linkList):
 						f.write(seriesList[index] +": "+ link + "\r\n")
