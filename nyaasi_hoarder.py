@@ -78,25 +78,14 @@ class nyaasi_hoarder:
 
 		# some titles have adopted new formats like "S01E02" and is totally different from what they used to be. So this converts it to understandable info
 	def convertEpisodeFormatFromFullToNumber(self, episodeFullTitle):
-
-		episodeFullTitleCharList = []
-		seasonKey = 'S'
-		episodeKey = 'E'
-
-		for index, char in enumerate(episodeFullTitle):
-			episodeFullTitleCharList.append(char)
-
-			try:
-				# this reads from right to left. for example, "Re:Zero SE01E14" will find if there is any number there. Then it will start from right to left. 
-				# If the next one is the number then good. If the next one is "E" then good. And so on.
-				# Right now it is limited to 99 episodes and 99 seasons. I will try to find a way to make it through.
-
-				if (index >= 5) and (self.isNumber(episodeFullTitleCharList[index]) == True) and (self.isNumber(episodeFullTitleCharList[index - 1]) == True) and (episodeFullTitleCharList[index - 2] == episodeKey) and (self.isNumber(episodeFullTitleCharList[index - 3]) == True) and (self.isNumber(episodeFullTitleCharList[index - 4]) == True) and (episodeFullTitleCharList[index - 5] == seasonKey):
-					return (str(episodeFullTitleCharList[index - 4 ]) + str(episodeFullTitleCharList[index - 3])), (str(episodeFullTitleCharList[index - 1 ]) + str(episodeFullTitleCharList[index]))
-
-			except Exception as e:
-				print(e)
-				break
+		s1 = re.findall(" S[0-9]{2}E[0-9]{2} ", episodeFullTitle)
+		#print(episodeFullTitle)
+		try:
+			seasonNumber = s1[0].strip()[1:-3]
+			episodeNumber = s1[0].strip()[4:]
+			return seasonNumber, episodeNumber
+		except:
+			raise Exception
 
 	# this does most of the work to intepret the data including torrent, magnet, episode number, title, quality
 	def findEpisodeData(self, htmlCode):
