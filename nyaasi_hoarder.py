@@ -90,22 +90,31 @@ class nyaasi_hoarder:
 	# this does most of the work to intepret the data including torrent, magnet, episode number, title, quality
 	def findEpisodeData(self, htmlCode):
 			# from chunk of text to list
+			# explanation of how this works( and how bad it is )
+			# after the html is passed, they will be appended into a class attribute, so every iteration of this fuction will increase the size of that attribute
+			# the line that carries all of them is the `if episodeFullTitle not in self.episodeList`
+			# the `for index, line...` will read all the ever-increasing list again and again to look for the next episode that does fit the above condition
+			# this explains why `return` at the end was needed to know what episode it is on.
+			# without that, the code cannot carry on and the function that carries all of the instructions here cannot work without that return passing
+			# a more efficient way should be reading it once, which means no return
+			# it did work to pass the list, but the startfinding does not work properly
+		htmlCode_tagged = []
 		for htmlLinesWithSelectedClass in htmlCode.find_all('td'):
 			self.rawFilteredData.append(str(htmlLinesWithSelectedClass))
 
-		for entriesIn_rawFilteredData_Index, entriesIn_rawFilteredData in enumerate(self.rawFilteredData):
+		for index, line in enumerate(self.rawFilteredData):
 			# casually filtering text
-			if self.selectedQuality in entriesIn_rawFilteredData and ( self.seriesName in entriesIn_rawFilteredData or self.remove_spec_chars(self.seriesName) in entriesIn_rawFilteredData ) and self.subTeam in entriesIn_rawFilteredData:
+			if self.selectedQuality in line and ( self.seriesName in line or self.remove_spec_chars(self.seriesName) in line ) and self.subTeam in line:
 				# at this point, I forgot how these things work. I think they are in the quotation mark ("") so this just takes all the text in it.
 				# if the website changes, this would be the first thing that breaks
-				#print(self.rawFilteredData[entriesIn_rawFilteredData_Index])
-				episodeFullTitle = re.findall('"([^"]*)"', str(self.rawFilteredData[entriesIn_rawFilteredData_Index]))[-1]
+				#print(self.rawFilteredData[index])
+				episodeFullTitle = re.findall('"([^"]*)"', str(self.rawFilteredData[index]))[-1]
 
-				links = re.findall('"([^"]*)"', str(self.rawFilteredData[entriesIn_rawFilteredData_Index + 1]))
+				links = re.findall('"([^"]*)"', str(self.rawFilteredData[index + 1]))
 				torrentLink = links[1]
 				magnetLink = links[3]
 
-				timeUploaded = int(re.findall('"([^"]*)"', str(self.rawFilteredData[entriesIn_rawFilteredData_Index + 3]))[1])
+				timeUploaded = int(re.findall('"([^"]*)"', str(self.rawFilteredData[index + 3]))[1])
 
 				#throughout the html, there are many times when the title repeats, it just makes sure that doesn't happen.
 				if episodeFullTitle not in self.episodeList:
