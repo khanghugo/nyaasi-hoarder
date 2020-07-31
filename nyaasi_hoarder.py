@@ -19,7 +19,7 @@ class nyaasi_hoarder:
 		self.episodeListJustNumber = []
 		self.magnetList = []
 		self.torrentList = []
-		self.rawFilteredData = []
+		self.episodes_on_current_page = []
 		self.timeUploaded = []
 
 		self.masterUrl = 'https://nyaa.si'
@@ -40,17 +40,6 @@ class nyaasi_hoarder:
 
 		else:
 			self.subTeamUrl = self.subTeam
-
-		# check/edit input
-		if self.selectedEpisode == 'latest':
-			pass
-
-		elif len(self.selectedEpisode) == 1:
-			self.selectedEpisode = '0' + self.selectedEpisode
-
-
-		#DEBUG
-		#print(self.episodeListJustNumber)
 
 		# it just makes the page number go up
 	def urlRaiser(self, number):
@@ -98,23 +87,28 @@ class nyaasi_hoarder:
 			# without that, the code cannot carry on and the function that carries all of the instructions here cannot work without that return passing
 			# a more efficient way should be reading it once, which means no return
 			# it did work to pass the list, but the startfinding does not work properly
-		htmlCode_tagged = []
-		for htmlLinesWithSelectedClass in htmlCode.find_all('td'):
-			self.rawFilteredData.append(str(htmlLinesWithSelectedClass))
 
-		for index, line in enumerate(self.rawFilteredData):
+			# it is proven to be correct again. so the messed up part from now should be the startfinding
+			# the function has been changed to use local assignment instead
+		htmlCode_tagged = []
+		self.episodes_on_current_page.clear()
+
+		for htmlLinesWithSelectedClass in htmlCode.find_all('td'):
+			htmlCode_tagged.append(str(htmlLinesWithSelectedClass))
+
+		for index, line in enumerate(htmlCode_tagged):
 			# casually filtering text
 			if self.selectedQuality in line and ( self.seriesName in line or self.remove_spec_chars(self.seriesName) in line ) and self.subTeam in line:
 				# at this point, I forgot how these things work. I think they are in the quotation mark ("") so this just takes all the text in it.
 				# if the website changes, this would be the first thing that breaks
-				#print(self.rawFilteredData[index])
-				episodeFullTitle = re.findall('"([^"]*)"', str(self.rawFilteredData[index]))[-1]
+				#print(htmlCode_tagged[index])
+				episodeFullTitle = re.findall('"([^"]*)"', str(htmlCode_tagged[index]))[-1]
 
-				links = re.findall('"([^"]*)"', str(self.rawFilteredData[index + 1]))
+				links = re.findall('"([^"]*)"', str(htmlCode_tagged[index + 1]))
 				torrentLink = links[1]
 				magnetLink = links[3]
 
-				timeUploaded = int(re.findall('"([^"]*)"', str(self.rawFilteredData[index + 3]))[1])
+				timeUploaded = int(re.findall('"([^"]*)"', str(htmlCode_tagged[index + 3]))[1])
 
 				#throughout the html, there are many times when the title repeats, it just makes sure that doesn't happen.
 				if episodeFullTitle not in self.episodeList:
@@ -139,12 +133,15 @@ class nyaasi_hoarder:
 					if self.isNumber(episodeNumber) == True:
 
 						self.episodeListJustNumber.append(episodeNumber)
+						self.episodes_on_current_page.append(episodeNumber)
+
 						self.torrentList.append(self.masterUrl + torrentLink)
 						self.magnetList.append(magnetLink)
 						self.episodeList.append(episodeFullTitle)
 						self.timeUploaded.append(timeUploaded)
 
-						return episodeNumber
+
+						#return episodeNumber
 						
 	def startFindingEpisode(self):
 		pageCount = 0
@@ -155,16 +152,59 @@ class nyaasi_hoarder:
 
 		print("SCRIPT STARTED!\r\n")
 		while True:
-			try: 
+			try: 			
 				# main operation in this composition
-				episodeNumber = self.findEpisodeData( self.parsingNyaasi( self.urlRaiser(pageCount) ) )
-				#print(episodeNumber)
+				self.findEpisodeData( self.parsingNyaasi( self.urlRaiser(pageCount) ) )
 
-				if episodeNumber:
-					print("", end="\r")
-					print( self.episodeList[self.episodeListJustNumber.index(episodeNumber)] + ' FOUND!' )
+				pageCount += 1
 
-				elif episodeNumber == None and pageCount > pageTimeOutMax and startDedicatedTimeOut == True:
+				if self.episodes_on_current_page:
+					for i in self.episodes_on_current_page:
+						print("", end="\r")
+						print(f"{self.episodeList[self.episodeListJustNumber.index(i)]} FOUND!" )
+
+				if self.episodeListJustNumber:
+					latestEpisode = self.episodeListJustNumber[0]
+					try: # that list will reset every composition operations
+						current_episode = self.episodes_on_current_page[-1]
+					except:
+						current_episode = None
+
+					if self.selectedEpisode == 'all':
+
+						if current_episode == '01' and pageCountOnEp00 == 0:
+							print("\nFINDING EPISODE 00!", end ="")
+							startDedicatedTimeOut = False
+							pageCountOnEp00 += 1
+
+						if current_episode == '00':
+							break
+
+						if pageCountOnEp00 > 0:
+							print(".", end="", flush=True)
+
+							if pageCountOnEp00 > pageTimeOutMax:
+								print("\r\n\r\nTHERE IS NO EPISODE 00!")
+								break
+
+							pageCountOnEp00 += 1
+
+					if self.selectedEpisode != 'all':
+	
+							if self.selectedEpisode != 'latest' and ( self.isNumber( latestEpisode ) == True ) and ( int( latestEpisode ) < int( self.selectedEpisode ) ):
+								print("\r\nTHE EPISODE IS NOT AVAILABLE")
+								print(f"THE LATEST EPISODE IS {latestEpisode}")
+								self.proceedToSaveData = False
+								break
+	
+							if self.selectedEpisode in self.episodes_on_current_page:
+								break
+
+							if self.selectedEpisode == 'latest' and latestEpisode in self.episodes_on_current_page:
+								break
+
+
+				elif not self.episodes_on_current_page and pageCount > pageTimeOutMax and startDedicatedTimeOut == True:
 					if pageCount - pageTimeOutMax == 1:
 						print("LOOKING IN OLDER PAGES", end="", flush=True)
 
@@ -185,47 +225,6 @@ class nyaasi_hoarder:
 
 						break
 
-				pageCount += 1
-
-				if self.episodeListJustNumber == []:
-					continue
-	
-				else:
-					latestEpisode = self.episodeListJustNumber[0]
-
-					if self.selectedEpisode == 'all':
-
-						if episodeNumber == '01' and pageCountOnEp00 == 0:
-							print("\r\nFINDING EPISODE 00!", end ="", flush=True)
-							startDedicatedTimeOut = False
-							pageCountOnEp00 += 1
-
-						elif episodeNumber == '00':
-							break
-
-						elif pageCountOnEp00 > 0:
-							print(".", end="", flush=True)
-
-							if pageCountOnEp00 > pageTimeOutMax:
-								print("\r\n\r\nTHERE IS NO EPISODE 00!")
-								break
-
-							pageCountOnEp00 += 1
-
-					if self.selectedEpisode != 'all':
-	
-							if self.selectedEpisode != 'latest' and ( self.isNumber( latestEpisode ) == True ) and ( int( latestEpisode ) < int( self.selectedEpisode ) ):
-								print("\r\nTHE EPISODE IS NOT AVAILABLE")
-								print(f"THE LATEST EPISODE IS {latestEpisode}")
-								self.proceedToSaveData = False
-								break
-	
-							if episodeNumber == self.selectedEpisode:
-								break
-
-							if self.selectedEpisode == "latest" and episodeNumber == latestEpisode:
-								break
-
 			except (Exception) as e:
 				print(str(e) + " LOOP ERROR")
 				break
@@ -239,8 +238,11 @@ class nyaasi_hoarder:
 				for link in linkList:
 					webbrowser.open(link)
 				
-			elif selectedEpisode != 'all':
-				webbrowser.open(linkList[-1])
+			elif selectedEpisode == 'latest':
+				webbrowser.open(linkList[0])
+
+			else:
+				webbrowser.open(linkList[self.episodeListJustNumber.index(selectedEpisode)])
 
 	def saveTorrent(self, linkList, seriesList, linkType, selectedEpisode):
 		seriesName = self.remove_spec_chars(self.seriesName)
@@ -251,11 +253,14 @@ class nyaasi_hoarder:
 					f.write('Magnet links \r\n')
 				elif linkType == 'torrent':
 					f.write('Torrent links \r\n')
-				if selectedEpisode != 'all': 
-					f.write(seriesList[-1] +": "+ linkList[-1] + "\r\n") # some how I forgot how this works. The list will stop appending as soon as selected episode is in it. So the last value is good.
+				if selectedEpisode == 'latest': 
+					f.write(seriesList[0] +": "+ linkList[0] + "\r\n") # some how I forgot how this works. The list will stop appending as soon as selected episode is in it. So the last value is good.
 				elif selectedEpisode == 'all': # selectedEpisode 0 is download in list.
 					for index, link in enumerate(linkList):
 						f.write(seriesList[index] +": "+ link + "\r\n")
+				else:
+					index = self.episodeListJustNumber.index(selectedEpisode)
+					f.write(f"{seriesList[index]}: {linkList[index]}\r\n")
 
 def main():
 	# default settings
@@ -278,6 +283,9 @@ def main():
 	# seriesName is input to a list instead of a string so it needs to be joined
 	seperator = ' '
 	if args.seriesName: args.seriesName = seperator.join(args.seriesName)
+
+	if len(args.selectedEpisode) == 1:
+		args.selectedEpisode = f"0{args.selectedEpisode}"
 
 	# switch name so it's easier to read
 	subTeam = args.subTeam
