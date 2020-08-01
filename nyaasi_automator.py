@@ -41,6 +41,7 @@ def op(seriesName, selectedEpisode, selectedQuality, subTeam, save, dl):
 	d_subTeam = 'Judas'
 	d_selectedQuality = '1080p'
 	d_selectedEpisode = 'all'
+	d_save = 1
 
 	selectedEpisode_options = ['latest', 'all', ""]
 	selectedQuality_options = ['1080p', '720p', '480p', '360p', ""]
@@ -86,7 +87,7 @@ def op(seriesName, selectedEpisode, selectedQuality, subTeam, save, dl):
 	if not selectedEpisode:	selectedEpisode = d_selectedEpisode
 	if not selectedQuality:	selectedQuality = d_selectedQuality
 	if not subTeam:	subTeam = d_subTeam
-	if not save and not dl: save = 1
+	if not save and not dl: save = d_save
 
 	#else: (lambda __print: (__print('try again'), (quit(), None)[1])[1])(__import__('__builtin__', level=0).__dict__['print'])
 
@@ -146,7 +147,7 @@ def op(seriesName, selectedEpisode, selectedQuality, subTeam, save, dl):
 		# three states so I need to specify, using `not overwrite` will also count None
 		if overwrite == 0:
 			quit()
-			
+
 		uploaded_time_unix = nyaasi.time_uploaded[0]
 		uploaded_time = datetime.fromtimestamp( uploaded_time_unix )
 		

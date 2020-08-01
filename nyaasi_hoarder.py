@@ -11,7 +11,6 @@ class nyaasi_hoarder:
 	def __init__(self, seriesName, selectedEpisode, selectedQuality, subTeam):
 		self.selectedEpisode = selectedEpisode
 		self.subTeam = subTeam
-
 		self.seriesName = seriesName
 		self.selectedQuality = selectedQuality
 
@@ -20,10 +19,9 @@ class nyaasi_hoarder:
 		self.magnetList = []
 		self.torrentList = []
 		self.episodes_on_current_page = []
-		self.timeUploaded = []
+		self.time_uploaded = []
 
 		self.masterUrl = 'https://nyaa.si'
-		self.tag = 'a'
 
 		# add more if U like it.
 		self.subTeamDict = {
@@ -33,6 +31,7 @@ class nyaasi_hoarder:
 		"Raze": "Raze876",
 		"Anime Time": "sff",
 		"FFA": "FreeForAll",
+		"AkihitoSubs": "AkihitoSenpai"
 		}
 
 		if self.subTeam in self.subTeamDict:
@@ -74,22 +73,11 @@ class nyaasi_hoarder:
 			episodeNumber = s1[0].strip()[4:]
 			return seasonNumber, episodeNumber
 		except:
+			# this Exception would be interpreted by the compositions instead here.
 			raise Exception
 
 	# this does most of the work to intepret the data including torrent, magnet, episode number, title, quality
 	def findEpisodeData(self, htmlCode):
-			# from chunk of text to list
-			# explanation of how this works( and how bad it is )
-			# after the html is passed, they will be appended into a class attribute, so every iteration of this fuction will increase the size of that attribute
-			# the line that carries all of them is the `if episodeFullTitle not in self.episodeList`
-			# the `for index, line...` will read all the ever-increasing list again and again to look for the next episode that does fit the above condition
-			# this explains why `return` at the end was needed to know what episode it is on.
-			# without that, the code cannot carry on and the function that carries all of the instructions here cannot work without that return passing
-			# a more efficient way should be reading it once, which means no return
-			# it did work to pass the list, but the startfinding does not work properly
-
-			# it is proven to be correct again. so the messed up part from now should be the startfinding
-			# the function has been changed to use local assignment instead
 		htmlCode_tagged = []
 		self.episodes_on_current_page.clear()
 
@@ -99,16 +87,14 @@ class nyaasi_hoarder:
 		for index, line in enumerate(htmlCode_tagged):
 			# casually filtering text
 			if self.selectedQuality in line and ( self.seriesName in line or self.remove_spec_chars(self.seriesName) in line ) and self.subTeam in line:
-				# at this point, I forgot how these things work. I think they are in the quotation mark ("") so this just takes all the text in it.
 				# if the website changes, this would be the first thing that breaks
-				#print(htmlCode_tagged[index])
 				episodeFullTitle = re.findall('"([^"]*)"', str(htmlCode_tagged[index]))[-1]
 
 				links = re.findall('"([^"]*)"', str(htmlCode_tagged[index + 1]))
 				torrentLink = links[1]
 				magnetLink = links[3]
 
-				timeUploaded = int(re.findall('"([^"]*)"', str(htmlCode_tagged[index + 3]))[1])
+				time_uploaded = int(re.findall('"([^"]*)"', str(htmlCode_tagged[index + 3]))[1])
 
 				#throughout the html, there are many times when the title repeats, it just makes sure that doesn't happen.
 				if episodeFullTitle not in self.episodeList:
@@ -138,10 +124,7 @@ class nyaasi_hoarder:
 						self.torrentList.append(self.masterUrl + torrentLink)
 						self.magnetList.append(magnetLink)
 						self.episodeList.append(episodeFullTitle)
-						self.timeUploaded.append(timeUploaded)
-
-
-						#return episodeNumber
+						self.time_uploaded.append(time_uploaded)
 						
 	def startFindingEpisode(self):
 		pageCount = 0
@@ -231,6 +214,44 @@ class nyaasi_hoarder:
 
 		print('\r\nSCRIPT DONE!')
 
+	def startFindingEpisode_silent(self):
+		pageCount = 0
+		pageCountOnEp00 = 0
+		startDedicatedTimeOut = True
+		pageTimeOutMax = 5
+		self.proceedToSaveData = True
+		while True:
+			try: 			
+				self.findEpisodeData( self.parsingNyaasi( self.urlRaiser(pageCount) ) )
+				pageCount += 1
+				if self.episodeListJustNumber:
+					latestEpisode = self.episodeListJustNumber[0]
+					try: # that list will reset every composition operations
+						current_episode = self.episodes_on_current_page[-1]
+					except:
+						current_episode = None
+					if self.selectedEpisode == 'all':
+						if current_episode == '01' and pageCountOnEp00 == 0:
+							startDedicatedTimeOut = False
+							pageCountOnEp00 += 1
+						if current_episode == '00': break
+						if pageCountOnEp00 > pageTimeOutMax:
+							break
+						pageCountOnEp00 += 1
+					if self.selectedEpisode != 'all':
+							if self.selectedEpisode != 'latest' and ( self.isNumber( latestEpisode ) == True ) and ( int( latestEpisode ) < int( self.selectedEpisode ) ):
+								self.proceedToSaveData = False
+								break
+							if self.selectedEpisode in self.episodes_on_current_page: break
+							if self.selectedEpisode == 'latest' and latestEpisode in self.episodes_on_current_page: break
+				elif not self.episodes_on_current_page and pageCount > pageTimeOutMax and startDedicatedTimeOut == True:
+					if pageCount > (pageTimeOutMax + 10):
+						if self.episodeList: self.proceedToSaveData = True
+						else: self.proceedToSaveData = False
+						break
+			except:
+				break
+
 	def downloadTorrent(self, linkList, selectedEpisode):
 		if linkList:
 
@@ -245,6 +266,7 @@ class nyaasi_hoarder:
 				webbrowser.open(linkList[self.episodeListJustNumber.index(selectedEpisode)])
 
 	def saveTorrent(self, linkList, seriesList, linkType, selectedEpisode):
+		# cant save with special characters
 		seriesName = self.remove_spec_chars(self.seriesName)
 
 		with open(f"{seriesName} in {self.selectedQuality} magnet and torrent links.txt", 'a') as f: # a means (makes a new file and) append on it 
@@ -267,6 +289,7 @@ def main():
 	d_subTeam = 'Judas'
 	d_selectedQuality = '1080p'
 	d_selectedEpisode = 'all'
+	d_save = 1
 	selectedEpisode_options = ['latest', 'all', ""]
 	selectedQuality_options = ['1080p', '720p', '480p', '360p', ""]
 	saving_options = ['save', 'torrent', 'magnet', ""]
@@ -335,12 +358,13 @@ def main():
 	if not selectedEpisode:	selectedEpisode = d_selectedEpisode
 	if not selectedQuality:	selectedQuality = d_selectedQuality
 	if not subTeam:	subTeam = d_subTeam
-	if not save and not dl: save = 1
+	if not save and not dl: save = d_save
 
 	nyaasi = nyaasi_hoarder(seriesName, selectedEpisode, selectedQuality, subTeam)
 
 	# function that do the works
-	nyaasi.startFindingEpisode()
+	#nyaasi.startFindingEpisode()
+	nyaasi.startFindingEpisode_silent()
 
 	if nyaasi.proceedToSaveData:
 		if dl == 'magnet':
