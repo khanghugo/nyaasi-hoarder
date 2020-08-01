@@ -24,4 +24,9 @@ Simply `nyaasi_automator.py` and it will prompt you to enter the info of your an
 
 The next use, the script will read it and loops forever to check whether the anime is updated or not. 
 
-So now, you don't need to look up if new episode is available, this would just do all the work for you
+So now, you don't need to look up if new episode is available, this would just do all the work for you.
+
+Add `-am` to enter `add mode` in order to add more animes into your list.
+
+
+
