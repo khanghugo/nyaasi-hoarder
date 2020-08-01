@@ -11,6 +11,9 @@ parser.add_argument("-am", action="store_true", help="This will run nyaasi_hoard
 args = parser.parse_args()
 
 # predefinied stuff
+m = open('na_config.txt', 'a')
+m.close()
+
 os.system('cls')
 
 seriesName = ""
@@ -143,9 +146,9 @@ def op(seriesName, selectedEpisode, selectedQuality, subTeam, save, dl):
 		# three states so I need to specify, using `not overwrite` will also count None
 		if overwrite == 0:
 			quit()
-		if args.am:
-			uploaded_time_unix = nyaasi.time_uploaded[0]
-			uploaded_time = datetime.fromtimestamp( uploaded_time_unix )
+			
+		uploaded_time_unix = nyaasi.time_uploaded[0]
+		uploaded_time = datetime.fromtimestamp( uploaded_time_unix )
 		
 		with open("na_config.txt", "w+") as datfile:  # change mode
 			if is_series_new:
