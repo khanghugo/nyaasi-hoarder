@@ -110,7 +110,7 @@ class nyaasi_hoarder:
 							int(episodeNumber)
 	
 						except:
-							episodeNumber = episodeFullTitle.replace(f"[{self.subTeam}]", "").replace(self.seriesName, "")[3:8].replace("	[", "").replace(" ","")
+							episodeNumber = re.findall(' - [0-9]{2} [[]', episodeFullTitle)[-1].replace('-', '').replace('[','').strip()
 
 					if self.subTeam == 'Raze':
 						s = episodeFullTitle[:-10].replace(f" x264 {self.selectedQuality}","")
@@ -364,7 +364,7 @@ def main():
 
 	# function that do the works
 	#nyaasi.startFindingEpisode()
-	nyaasi.startFindingEpisode_silent()
+	nyaasi.startFindingEpisode()
 
 	if nyaasi.proceedToSaveData:
 		if dl == 'magnet':

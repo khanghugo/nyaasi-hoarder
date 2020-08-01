@@ -1,6 +1,6 @@
 import nyaasi_hoarder as nh
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 import time
 import os
@@ -35,6 +35,22 @@ def detect_indices(l):
 	for index, line in enumerate(l):
 		if 'Latest episode' in line:
 			yield index - 1
+
+def seconds_to_format(sec):
+	day = sec // (24*3600)
+	sec %= (24*3600)
+
+	hour = sec // 3600
+	sec %= 3600
+
+	minute = sec // 60
+	sec %= 60
+
+	a = [day, hour, minute, sec]
+	for index, i in enumerate(a):
+		if len(str(i)) == 1: a[index] = f'0{i}'
+
+	return a
 
 # run nyaasi_hoarder like normal when the optional argument is given
 def op(seriesName, selectedEpisode, selectedQuality, subTeam, save, dl):
@@ -127,7 +143,7 @@ def op(seriesName, selectedEpisode, selectedQuality, subTeam, save, dl):
 	# object, it is just for this condition I guess? When I get to the automated part, this should change
 	nyaasi = nh.nyaasi_hoarder(seriesName, selectedEpisode, selectedQuality, subTeam)
 
-	nyaasi.startFindingEpisode()
+	nyaasi.startFindingEpisode_silent()
 	save = 1
 	if nyaasi.proceedToSaveData:
 		if dl == 'magnet':
@@ -184,9 +200,10 @@ if not args.am:
 	saved_series = []
 	wait_time_list = []
 	series_found = []
-	sequence = 4
-	s = 0
+	sequence_fixed = 4
+	sequence = 0
 	frequency = 440
+	time_sleep = 30 # seconds
 
 	datfile = open("na_config.txt", "r")
 	datfile_lines = datfile.readlines()
@@ -204,7 +221,10 @@ if not args.am:
 			nyaasi = nh.nyaasi_hoarder(name, 'latest', q, sub)
 			nyaasi.startFindingEpisode_silent()
 								
-			uploaded_time_unix = nyaasi.time_uploaded[0]
+			if nyaasi.time_uploaded:
+				uploaded_time_unix = nyaasi.time_uploaded[0]
+			else: uploaded_time_unix = 0
+
 			uploaded_time = datetime.fromtimestamp( uploaded_time_unix )
 			current_time = datetime.now()
 			current_time_unix = current_time.timestamp()
@@ -212,6 +232,7 @@ if not args.am:
 			latest = nyaasi.episodeListJustNumber[0]
 			if int(ep) < int(latest):
 				save = 1
+				s = 0
 				series_found.append(name)
 
 				# print(f'Newer episode of {name} found! Episode {latest}') # moved out of this loop
@@ -229,12 +250,11 @@ if not args.am:
 					datfile_lines[index + 3] = f"Sub team: {sub}\n"
 					datfile_lines[index + 4] = f"Last uploaded: {uploaded_time} : {uploaded_time_unix}\n"
 					datfile.writelines(datfile_lines)
-				wait_time_unix = uploaded_time_unix + (3600 * 24 * 7)
+				wait_time_unix = (3600 * 24 * 7)
 			else:
 				wait_time_unix = (int(t) + (3600 * 24 * 7)) - current_time_unix # last uploaded plus a week time and subtract to the current time
-				if wait_time_unix < 0:
-					wait_time_unix += (1800)
-					print(f"{name} is overdue!")
+				if wait_time_unix < 0: wait_time_unix = 0
+
 			wait_time_list.append(wait_time_unix)
 			saved_series.append(name)
 
@@ -243,13 +263,20 @@ if not args.am:
 			if name in series_found:
 				winsound.Beep(frequency, 500)
 				print(f'New episode {latest} for {name} found!')
+			if wait_time == 0:
+				print(f'{name} is overdue!')
 
-			print(f"ETA for {name}: {datetime.fromtimestamp(wait_time):%d %H:%M:%S} day(s)")
-		time.sleep(10)
+			# wow = [day, hour, min, sec]
+			wow = seconds_to_format(int(wait_time))
+			print(f"ETA for {name}: {wow[0]} {wow[1]}:{wow[2]}:{wow[3]} day(s)")
+
+		time.sleep(time_sleep)
+
 		# restart something every certain times
-		if s % sequence == 3:
+		# here i clear series_found so if the series is found, it would beep 3 times
+		if sequence % sequence_fixed == 3:
 			series_found.clear()
-		s += 1
+		sequence += 1
 
 # limitations:
 # for both 2 files, the written link file will be named exactly as your input
