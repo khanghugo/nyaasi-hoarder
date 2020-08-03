@@ -144,7 +144,6 @@ def op(seriesName, selectedEpisode, selectedQuality, subTeam, save, dl):
 	nyaasi = nh.nyaasi_hoarder(seriesName, selectedEpisode, selectedQuality, subTeam)
 
 	nyaasi.startFindingEpisode_silent()
-	save = 1
 	if nyaasi.proceedToSaveData:
 		if dl == 'magnet':
 			nyaasi.downloadTorrent(nyaasi.magnetList, selectedEpisode)
