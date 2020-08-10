@@ -21,7 +21,7 @@ selectedEpisode = ""
 selectedQuality = ""
 subTeam = ""
 save = None
-dl = None
+dl = 'torrent'
 
 def slice_string(sth):
 	return sth.split(": ")[-1].strip() # split at the colon, choose the second item cus the first one is the label, cut the first char which is a space
@@ -231,7 +231,6 @@ if not args.am:
 			# `t`, `uploaded_time_unix`, `current_time_unix` could be 3 different values if we have a new episode
 			latest = nyaasi.episodeListJustNumber[0]
 			if int(ep) < int(latest):
-				save = 1
 				s = 0
 				series_found.append(name)
 
