@@ -78,11 +78,9 @@ class nyaasi_hoarder:
 
 	# this does most of the work to intepret the data including torrent, magnet, episode number, title, quality
 	def findEpisodeData(self, htmlCode):
-		htmlCode_tagged = []
 		self.episodes_on_current_page.clear()
 
-		for htmlLinesWithSelectedClass in htmlCode.find_all('td'):
-			htmlCode_tagged.append(str(htmlLinesWithSelectedClass))
+		htmlCode_tagged = [str(x) for x in htmlCode.find_all('td')]
 
 		for index, line in enumerate(htmlCode_tagged):
 			# casually filtering text
