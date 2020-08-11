@@ -3,6 +3,8 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import argparse
+from query_encoder import query_encoder
+import time
 #from urllib.parse import unquote
 
 def is_number(s):
@@ -39,23 +41,27 @@ class sub_team_page: # one trick to speed up the searching is adding the name of
 
 		return f'{website}/user/{sub_team_alias}?p={number}'
 
-
 class parser:
-	def __init__(self, url):
+	def __init__(self, url, name):
 		self.url = url
+		self.name = query_encoder(name).name_to_query() # this will make a query `q=name`
+
+	def print_url(self):
+		print(f'{self.url}&q={self.name}')
+	
+	def print_code(self):
+		r = requests.get(self.url)
+		print(r.status_code)
 
 	def parsing(self):
-		r = requests.get(self.url)
+		# url irself will look like `https://nyaa.si/user/horriblesubs?p=3`
+		r = requests.get(f'{self.url}&q={self.name}')
 
 		if r.status_code != 200:
 			return False
 
 		#return BeautifulSoup(r, 'html.parser')
 		return [str(x) for x in BeautifulSoup(r.text, 'html.parser').find_all('td')]
-
-	def print_code(self):
-		r = requests.get(self.url)
-		print(r.status_code)
 
 class reading:
 	def __init__(self, html, name, ep, quality, team):
@@ -77,7 +83,7 @@ class reading:
 	def find_episode_number(self, title):
 		# general, not team specific
 		try:
-			episode_number = re.findall(' - [0-9]{2} .', title)[-1].replace('-', '').replace('[','').strip()
+			episode_number = re.findall(' - [0-9]{2} .| - [0-9]{3} .', title)[-1].replace('-', '').replace('[','').strip()
 			if int(episode_number): return episode_number
 			else: raise Exception
 		except:
@@ -85,22 +91,16 @@ class reading:
 		# can add more specific cases if we create the same dict from sub_team_page class
 
 	def extract_index(self):
-		# todo, return 'Cannot connect when the code is not 200' : ok
 		if not self.html:
 			return False
 
 		title_index = [self.html.index(x) for x in self.html if self.name in x if self.quality in x if 'magnet:?' not in x] # magnet:? is to make sure names with 1 word be filtered
-	
 		return title_index
-		# for x in self.html:
-		# 	if (self.name and self.quality in x):
-		# 		print(x)
 	
 	def extract_debug(self):
 		for i in self.html:
 			if self.name in i and self.quality in i:
 				print(i)
-
 
 	def extract_info(self):
 		website = 'https://nyaa.si'
@@ -120,12 +120,8 @@ class reading:
 			self.torrent_list.append(f'{website}{links[1]}')
 			self.magnet_list.append(links[3])
 
-			# torrent_link = links[1]
-			# magnet_link = links[3]
-
 			self.time_uploaded_list.append(int(re.findall('"([^"]*)"', self.html[i + 3])[1]))
 
-			#time_uploaded = int(re.findall('"([^"]*)"', self.html[index + 3])[1])
 class writing:
 	def __init__(self, name, q, name_list, t_list, m_list):
 		self.name = name
@@ -133,9 +129,17 @@ class writing:
 		self.name_list = name_list
 		self.t_list = t_list
 		self.m_list = m_list
+		self.number_of_file = len(self.name_list)
+
+	def print_filename(self):
+		filename = f'{remove_spec_char(self.name[0])}.torrent'
+		print(filename)
 
 	def save_file(self):
+		count = 1
+
 		# save links to a file
+		print("Writing txt file!")
 		with open(f'{self.name} [{self.q}].txt', 'a') as f:
 			for n, t, m in zip(self.name_list, self.t_list, self.m_list):
 				f.write(n)
@@ -144,11 +148,14 @@ class writing:
 				f.write('\n')
 				f.write(m)
 				f.write('\r\n')
+
 		# download torrent file for save
+		print('Downloading torrent file!')
 		for t, n in zip(self.t_list, self.name_list):
+			print(f'{count} out of {self.number_of_file}', end='\r', flush=True)
+			count += 1
+
 			r = requests.get(t)
-			# cd = r.headers.get('content-disposition')
-			# filename = remove_spec_char( unquote( re.findall('filename="([^"]*)', cd)[0] )) # unquote will decode all html characters, i can make my own library for that but later
 			filename = f'{remove_spec_char(n)}.torrent'
 			open(filename, 'wb+').write(r.content)
 
@@ -157,13 +164,31 @@ class writing:
 			os.startfile(i)
 
 	def torrent_file(self):
+		count = 1
+		l = []
+		print('Opening torrent file!')
+
 		for t, n in zip(self.t_list, self.name_list):
+			print(f'{count} out of {self.number_of_file}', end='\r', flush=True)
+			count += 1
+
 			# exact same code above
 			r = requests.get(t)
 			filename = f'{remove_spec_char(n)}.torrent'
+			l.append(filename)
+			#print(filename)
 			open(filename, 'wb+').write(r.content)
 			# extra step
 			os.startfile(filename)
+
+		print('Cleaning up torrent files!')
+		time.sleep(1) # for the time being, this processes too fast that the last file (episode 0 or 1) ends up being deleted before
+		# being processed by torrenting softwares
+		self.torrent_cleanup(l)
+
+	def torrent_cleanup(self, l):
+		for i in l:
+			os.remove(i)
 
 class nyaasi_hoarder: # composition
 	def __init__(self, name, ep, q, team, save):
@@ -191,22 +216,16 @@ class nyaasi_hoarder: # composition
 		print(obj.html)
 	
 	def page_info(self, p):
-		return reading(parser(sub_team_page(self.team).to_page(p)).parsing(),self.name,self.ep,self.q,self.team)
+		return reading(parser( sub_team_page(self.team).to_page(p), self.name).parsing(),self.name,self.ep,self.q,self.team)
 
 	def read_info(self, p):
 		obj = self.page_info(p)
-
-		# if not obj:
-		# 	print(f'Cannot connect to {sub_team_page(self.team).to_page(p)}')
-		# 	return False
-		# else:
-		# 	obj.extract_info()
-		# 	return obj.title_list, obj.ep_number_list, obj.torrent_list, obj.magnet_list, obj.time_uploaded_list
 
 		obj.extract_info()
 		return obj.title_list, obj.ep_number_list, obj.torrent_list, obj.magnet_list, obj.time_uploaded_list
 
 	def start(self):
+		print('', end='\n')
 		start_page = 1 # page 0 and page 1 are the same
 
 		episode_00_search_count = 0
@@ -218,14 +237,21 @@ class nyaasi_hoarder: # composition
 		torrent = []
 		magnet = []
 
+		latest_episode = 0
+
 		while True:
 			obj = self.read_info(start_page)
 			start_page += 1
 
 			if not obj[0]:
 				timeout_count += 1
+				if int(latest_episode) < 50: # nyaasi shows 75 entries for a page, i just use 50 just to be sure
+					break
+
 				print('.', end='', flush=True)
 				if timeout_count == timeout_max:
+					if episode_00_search_count:
+						print('\nCannot find episode 00')
 					if title:
 						print('\nCannot find the remaining episodes')
 					if not title:
@@ -239,11 +265,8 @@ class nyaasi_hoarder: # composition
 				for i in obj[0]:
 					print(f'FOUND {i}')
 
-				latest_episode = obj[1][0]
-				if not is_number(latest_episode):
-					print('latest_episode ERROR')
-					break
-				
+				if not latest_episode: latest_episode = obj[1][0] # this will save the latest episode and it'll work even pages change
+
 				# self.ep methods
 				current_episode = obj[1][-1]
 				if self.ep == 'all':
@@ -260,17 +283,6 @@ class nyaasi_hoarder: # composition
 						print('Searching for episode 00!')
 						episode_00_search_count += 1
 
-					# these lines wont be called
-					# if current_episode == '00':
-					# 	print('\nEpisode 00 found!')
-					# 	break
-
-					# elif episode_00_search_count < episode_00_search_max:
-					# 	print('.', end='\r', flush=True)
-					# else:
-					# 	print('Episode 00 not found!')
-					# 	break
-				
 				if self.ep == 'latest':
 					# saving as a list for consistency
 					title = [ obj[0][0] ]
@@ -292,16 +304,14 @@ class nyaasi_hoarder: # composition
 							torrent = [ obj[2][index] ]
 							magnet = [ obj[3][index] ]
 							break
-			
 
-		# return self.name, self.q, title, torrent, magnet
 		# proceed to save from here
 		#print(title)
 		if not title:
 			print('Try again!')
 			quit()
 
-		print('Proceed to saving')
+		print('Proceed to saving!')
 		w = writing(self.name, self.q, title, torrent, magnet)
 
 		if self.save == 'magnet':
@@ -310,61 +320,6 @@ class nyaasi_hoarder: # composition
 			w.torrent_file()
 		if self.save == 'save':
 			w.save_file()
-
-		# this doesnt work??? it would call all functions there
-		# save_dict = {
-		# 	'torrent': w.torrent_file(),
-		# 	'magnet': w.magnet_file(),
-		# 	'save': w.save_file()
-		# }
-		# save_dict[self.save] or the loop below
-		# for i in save_dict:
-		# 	if self.save in save_dict: save_dict[i]
-
-
-	
-class debug:
-	def main(self):
-		name = 'Monster Musume no Oisha-san'
-		ep = 'all'
-		quality = '720p'
-		team = 'HorribleSubs'
-
-		obj = nyaasi_hoarder(name, ep, quality, team, 'save')
-		obj.start()
-		# obj.print_page_html(1)
-		# rewrite.py "Monster Musume no Oisha-san" 
-
-		# page = sub_team_page(team).to_page(2)
-
-		# soupa = parser(page)
-		# soup = soupa.parsing()
-
-
-		# r = reading(soup, name, ep, quality, team)
-		# r.extract_debug()
-
-
-
-		#print(r.title_list)
-
-		# page = sub_team_page(team).to_page(0)
-
-		# soup = parser(page).parsing()
-		# if not soup:
-		# 	quit()
-
-		# #print(soup)
-		# r = reading(soup, name, ep, quality, team)
-		# r.extract_info()
-
-		# print(r.title_list)
-		# # print(r.ep_number_list)
-		# # print(r.time_uploaded_list)
-		# # print(r.torrent_list)
-
-		# file = writing(name, quality, r.title_list, r.torrent_list, r.magnet_list)
-		# file.save_file()
 
 def main():
 	name = ""
@@ -378,18 +333,25 @@ def main():
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument(action='store', dest='name', nargs='*')
-	parser.add_argument('-ep', action='store', dest='ep', nargs='?', default=d_ep)
+	parser.add_argument('-ep', action='store', dest='ep', nargs='?', default=d_ep, help='Number of the episode or `all` or `latest`')
 	parser.add_argument('-q', action='store', dest='q', nargs='?', default=d_quality)
 	parser.add_argument('-fs', action='store', dest='fs', nargs='?', default=d_team)
-	parser.add_argument('-save', action='store', dest='save', nargs='?', default=d_save)
+	parser.add_argument('-save', action='store', dest='save', nargs='?', default=d_save, help ='torrent or magnet or save')
 	args = parser.parse_args()
 
 	if args.name:
 		name = ' '.join(args.name)
-		q = args.q
-		ep = args.ep 
+
+		if args.q in q_opt:	q = args.q
+		else: q = d_quality
+
+		if args.ep in ep_opt or is_number(args.ep): ep = args.ep
+		else: ep = d_ep
+
 		team = args.fs 
-		save = args.save
+
+		if args.save in save_opt: save = args.save
+		else: save = d_save
 
 	else:
 		# name input
@@ -425,18 +387,21 @@ def main():
 			if not save: save = d_save
 			if save in save_opt:
 				break
-	# print(name)
-	# print(q)
-	# print(ep)
-	# print(team)
-	# print(save)
 
+	# len(ep) is resolved in nyaasi_hoarder, no need to be fixed here (when `1` is fed instead of `01`).
 	obj = nyaasi_hoarder(name, ep, q, team, save)
-	#obj = nyaasi_hoarder("Monster Musume no Oisha-san", 'latest', '1080p', 'HorribleSubs', 'save')
 	obj.start()
+def debug():
+	obj = parser( sub_team_page('HorribleSubs').to_page(1), 'Black Clover')
+	soup = obj.parsing()
+	obj2 = reading(soup, 'Black Clover', 'all', '1080p', 'save')
+	#ind = obj2.extract_index()
+	#print(len(ind))
+	obj2.extract_info()
 
 if __name__ == '__main__':
 	main()
+	#debug()
 
 
 
