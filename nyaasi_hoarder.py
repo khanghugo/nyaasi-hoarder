@@ -19,7 +19,7 @@ def is_number(s):
 
 
 def remove_spec_char(s):
-    return re.sub('[^A-Za-z0-9.[]-]+', '_', s)  # replace all special characters except for `.` with `_`
+    return re.sub('[^A-Za-z0-9.]', '_', s)  # replace all special characters except for `.` with `_`
 
 
 class SubTeam:
@@ -155,7 +155,7 @@ class Writer:
 
         # save links to a file
         print("Writing txt file!")
-        with open(f'{self.name} [{self.q}].txt', 'a') as f:
+        with open(f'{remove_spec_char(self.name)} [{self.q}].txt', 'a') as f:
             for n, t, m in zip(self.name_list, self.t_list, self.m_list):
                 f.write(n)
                 f.write('\n')
